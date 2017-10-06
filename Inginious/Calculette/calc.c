@@ -62,6 +62,11 @@ int main (int argc, char ** argv){
         fprintf(stderr, "Argument n'est pas une valeur numérique %s\n", optarg);
         return 1;
       }
+      if(operand == 0){
+        fprintf(stderr, "Division par 0 %s\n", optarg);
+        return 1;
+      }
+
       result/=operand;
       break;
 
@@ -92,8 +97,8 @@ int main (int argc, char ** argv){
     printf("%.*f\n",precision ,result);
   }
   else{
-    int result_int= (int) result;
-    printf("%d\n", result_int);
+
+    printf("%.0f\n", result);
   }
   return EXIT_SUCCESS;
 }
