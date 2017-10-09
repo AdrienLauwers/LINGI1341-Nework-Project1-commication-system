@@ -25,7 +25,7 @@ int wait_for_client(int sfd){
   memset(&their_addr, 0, sin_size);
   char buf[1024];
   int err;
-  err = recvfrom(sfd, buf, 1024, 0, (struct sockaddr *)&their_addr, &sin_size);
+  err = recvfrom(sfd, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&their_addr, &sin_size);
   if(err == -1){
     perror("erreur lors de la reception du message : ");
     return -1;

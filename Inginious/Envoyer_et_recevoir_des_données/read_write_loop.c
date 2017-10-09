@@ -32,7 +32,8 @@ void read_write_loop(const int sfd){
   int end = 0;
   int err;
   while(end == 0){
-
+    memset((void *)buf1, 0, 1024);
+    memset((void *)buf2, 0, 1024);
     FD_ZERO(&readfds);
     FD_SET(STDIN, &readfds);
     FD_SET(sfd, &readfds);
@@ -40,16 +41,18 @@ void read_write_loop(const int sfd){
     select(sfd+1, &readfds, NULL, NULL, &tv);
 
     if(FD_ISSET(STDIN, &readfds)){
-      err = read(STDIN, (void *)buf1, 1024);
+      err = read(STDIN,  buf1, 1024);
       if(err > 0){
-        send(sfd, (void *)buf1, err, 0);
+        if(write(sfd, buf1, err)<0)
+          perror("Error write STDOUT");
       }
     }
     if(FD_ISSET(sfd, &readfds)){
-      err = read(sfd, (void *)buf2, 1024);
-      
+      err = read(sfd, buf2, 1024);
+
       if(err > 0){
-        write(STDOUT, (void *)buf2, err);
+        if(write(STDOUT, buf2, err)<0)
+          perror("Error write STDOUT");
       }
     }
     end = feof(stdin);
