@@ -47,7 +47,55 @@ void pkt_del(pkt_t *pkt)
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
-	/* Your code will be inserted here */
+	if(len == 0)
+		return E_UNCONSISTENT;
+
+	if(len < 4) //trop petit pour contenir le header
+		return E_NOHEADER;
+
+
+	/*****************************************
+							ON CHECK LE HEADER
+	******************************************/
+
+	pkt_status_code verif_status;
+
+	uint8_t hd = data[0];
+
+	//Decodage du type / 2premiers bits du premier octet
+	verif_status = pkt_set_type(pkt, hd >> 6); //On ne veut que les deux bits de poids lourd ici Ex : si uint8_t est 11001010 alors on obtiendra 00000011 pour le type
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+	//set du TR à 0 avant recalcul de CRC1 / 3eme bit du premier octet
+	verif_status = pkt_set_tr(pkt, 0);
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+	//Décodage de la window / 5derniers bits du premier octect
+	verif_status = pkt_set_window(pkt, by&31); //On veut les 5bits de poids faibles donc on fait AND 00011111 Ex : 10100110 & 00011111 = 00000110
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+
+	//Décodage Seqnum / deuxième octet
+	verif_status = pkt_set_seqnum(pkt, data[1]);
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+	//Décodage de Length / Length est en network byte-order et il faut donc la convertir en host byte-order avec noths()
+	uint16_t pkt_length = ntohs(*((uint16_t *)(data + 2))); // (data+2) = Les 2bytes après les 2premiers bytes
+	verif_status = pkt_set_length(pkt, pkt_length);
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+	/*****************************************
+	OK POUR LE HEADER, ON PASSE AU CRC/PAYLOAD
+	******************************************/
+
+	//TODO faire le CRC / PAYLOAD
+
+	return verif_status;
 }
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
