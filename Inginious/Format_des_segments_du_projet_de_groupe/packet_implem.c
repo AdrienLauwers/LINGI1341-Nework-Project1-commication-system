@@ -3,17 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <arpa/inet.h>
 /* Extra #includes */
 /* Your code will be inserted here */
 
 struct __attribute__((__packed__)) pkt {
-	struct header {
-		ptypes_t TYPE : 2;
-		unsigned int TR : 1;
-		unsigned int WINDOW : 5;
-		uint8_t SEQNUM;
-		uint16_t LENGTH;
-	} header;
+	ptypes_t TYPE : 2;
+	unsigned int TR : 1;
+	unsigned int WINDOW : 5;
+	uint8_t SEQNUM;
+	uint16_t LENGTH;
 	uint32_t TIMESTAMP;
 	uint32_t CRC1;
 	char * PAYLOAD;
@@ -22,6 +21,7 @@ struct __attribute__((__packed__)) pkt {
 
 /* Extra code */
 /* Your code will be inserted here */
+
 
 pkt_t* pkt_new()
 {
@@ -73,7 +73,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 		return verif_status;
 
 	//Décodage de la window / 5derniers bits du premier octect
-	verif_status = pkt_set_window(pkt, by&31); //On veut les 5bits de poids faibles donc on fait AND 00011111 Ex : 10100110 & 00011111 = 00000110
+	verif_status = pkt_set_window(pkt, hd&31); //On veut les 5bits de poids faibles donc on fait AND 00011111 Ex : 10100110 & 00011111 = 00000110
 	if(verif_status != PKT_OK)
 		return verif_status;
 
@@ -93,39 +93,77 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	OK POUR LE HEADER, ON PASSE AU CRC/PAYLOAD
 	******************************************/
 
-	//TODO faire le CRC / PAYLOAD
+
+	//Décodage du timestamp
+	verif_status = pkt_set_timestamp(pkt, *(data + 4));
+	if(verif_status != PKT_OK)
+		return verif_status;
+
+	//Décodage CRC1
+	/*uint32_t crc1 = ntohs(*((uint32_t *)data + 8));
+	uint32_t new_crc1 = crc32(0L, Z_NULL, 0);
+
+	new_crc1 = crc32(new_crc1,(const Bytef*) data, 4);
+
+	if(crc1 != new_crc1)
+		return E_CRC;
+		*/
+	//Décodage payload
+	if(pkt_length <= 0){
+		//TODO
+	}
+	else{
+	  verif_status = pkt_set_payload(pkt, &(data[12]), pkt_length);
+		if(verif_status != PKT_OK)
+			return verif_status;
+	}
+	/*
+	if(pkt_length > 0 && pkt_get_tr(pkt) == 0){
+		//Décodage CRC2
+		uint32_t crc2 = ntohs(*((uint32_t *)data + 12 + pkt_length));
+		char buf[pkt_get_length(pkt)];
+		buf = pkt_get_payload(pkt);
+
+		uint32_t new_crc2 = crc32(0L, Z_NULL, 0);
+		new_crc2 = crc32(new_crc2,(const Bytef *) buf, 4);
+		if(crc2 != new_crc2)
+			return E_CRC;
+	}
+	*/
 
 	return verif_status;
 }
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
-	/* Your code will be inserted here */
+	return PKT_OK;
 }
 
 ptypes_t pkt_get_type  (const pkt_t* pkt)
 {
-	return pkt->header.TYPE;
+	return pkt->TYPE;
 }
 
 uint8_t  pkt_get_tr(const pkt_t* pkt)
 {
-	return pkt->header.TR;
+	return pkt->TR;
 }
 
 uint8_t  pkt_get_window(const pkt_t* pkt)
 {
-	return pkt->header.WINDOW;
+	return pkt->WINDOW;
 }
 
 uint8_t  pkt_get_seqnum(const pkt_t* pkt)
 {
-	return pkt->header.SEQNUM;
+	return pkt->SEQNUM;
 }
 
 uint16_t pkt_get_length(const pkt_t* pkt)
 {
-	return ntohs(pkt->header.LENGTH);
+	if(pkt->TR == 0)
+		return pkt->LENGTH;
+	return 0;
 }
 
 uint32_t pkt_get_timestamp   (const pkt_t* pkt)
@@ -155,7 +193,7 @@ const char* pkt_get_payload(const pkt_t* pkt)
 pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type)
 {
 	if(type == PTYPE_DATA || type == PTYPE_ACK || type == PTYPE_NACK){
-		pkt->header.TYPE = type;
+		pkt->TYPE = type;
 		return PKT_OK;
 	}
 	return E_TYPE;
@@ -163,8 +201,8 @@ pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type)
 
 pkt_status_code pkt_set_tr(pkt_t *pkt, const uint8_t tr)
 {
-	if(pkt->header.TYPE == PTYPE_DATA){
-		pkt->header.TR = tr;
+	if(pkt->TYPE == PTYPE_DATA){
+		pkt->TR = tr;
 		return PKT_OK;
 	}
 	return E_TR;
@@ -174,13 +212,13 @@ pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window)
 {
 	if(window > MAX_WINDOW_SIZE)
 		return E_WINDOW;
-	pkt->header.WINDOW = window;
+	pkt->WINDOW = window;
 	return PKT_OK;
 }
 
 pkt_status_code pkt_set_seqnum(pkt_t *pkt, const uint8_t seqnum)
 {
-	pkt->header.SEQNUM = seqnum;
+	pkt->SEQNUM = seqnum;
 	return PKT_OK;
 }
 
@@ -188,7 +226,7 @@ pkt_status_code pkt_set_length(pkt_t *pkt, const uint16_t length)
 {
 	if(length > MAX_PAYLOAD_SIZE)
 		return E_LENGTH;
-	pkt->header.LENGTH = length;
+	pkt->LENGTH = length;
 	return PKT_OK;
 }
 
@@ -219,5 +257,5 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 	if(return_status == PKT_OK){
 		memcpy(pkt->PAYLOAD, data, length);
 	}
-	return status;
+	return return_status;
 }
