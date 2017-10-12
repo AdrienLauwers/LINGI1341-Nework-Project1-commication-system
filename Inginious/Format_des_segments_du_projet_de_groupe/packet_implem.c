@@ -9,8 +9,8 @@
 
 struct __attribute__((__packed__)) pkt {
 	ptypes_t TYPE : 2;
-	unsigned int TR : 1;
-	unsigned int WINDOW : 5;
+	uint8_t TR : 1;
+	uint8_t WINDOW : 5;
 	uint8_t SEQNUM;
 	uint16_t LENGTH;
 	uint32_t TIMESTAMP;
@@ -36,6 +36,14 @@ pkt_t* pkt_new()
 		perror("Erreur lors du malloc du paylod");
 		return NULL;
 	}
+	memset(new_pkt->PAYLOAD, 0, 1);
+	new_pkt->TYPE = 1;
+	new_pkt->TR = 0;
+	new_pkt->WINDOW = 0;
+	new_pkt->LENGTH = 1;
+	new_pkt->TIMESTAMP = 0;
+	new_pkt->CRC1 = 0;
+	new_pkt->CRC2 = 0;
 	return new_pkt;
 }
 
@@ -77,18 +85,15 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	if(verif_status != PKT_OK)
 		return verif_status;
 
-
 	//Décodage Seqnum / deuxième octet
 	verif_status = pkt_set_seqnum(pkt, data[1]);
 	if(verif_status != PKT_OK)
 		return verif_status;
-
 	//Décodage de Length / Length est en network byte-order et il faut donc la convertir en host byte-order avec noths()
 	uint16_t pkt_length = ntohs(*((uint16_t *)(data + 2))); // (data+2) = Les 2bytes après les 2premiers bytes
 	verif_status = pkt_set_length(pkt, pkt_length);
 	if(verif_status != PKT_OK)
 		return verif_status;
-
 	/*****************************************
 	OK POUR LE HEADER, ON PASSE AU CRC/PAYLOAD
 	******************************************/
@@ -100,7 +105,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 		return verif_status;
 
 	//Décodage CRC1
-	/*uint32_t crc1 = ntohs(*((uint32_t *)data + 8));
+	/*uint32_t crc1 = ntohs(*((uint32_t *)data + 4));
 	uint32_t new_crc1 = crc32(0L, Z_NULL, 0);
 
 	new_crc1 = crc32(new_crc1,(const Bytef*) data, 4);
@@ -136,6 +141,46 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
+	size_t length = pkt_get_length(pkt);
+	if(pkt_get_tr(pkt)==0)
+		length += 4;
+	if(*len < length + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
+		return E_NOMEM;
+
+
+	uint8_t first_byte;
+	ptypes_t type = pkt_get_type(pkt);
+	type = type<<6;
+	uint8_t tr = pkt_get_tr(pkt);
+	tr = tr<<5;
+	first_byte = type | tr;
+	uint8_t window = pkt_get_window(pkt);
+	first_byte = first_byte | window;
+
+	buf[0] = first_byte;
+	size_t i;
+	char * pack = (char *) pkt;
+	for(i = 1 ; i<8 ; i++){
+		buf[i] = pack[i];
+	}
+	/*
+	uint32_t crc1 = crc32(0L, Z_NULL, 0);
+	crc1 = crc32(crc1,(const Bytef *) pkt, 4);
+	*/
+	//Crc1
+	*((uint32_t *) (buf + 8)) = htonl(1024);
+	const char * payload = pkt_get_payload(pkt);
+	for(i = 0 ; i<length; i++){
+		buf[12+i] = payload[i];
+	}
+	if(pkt_get_tr(pkt) == 0){
+		/*
+		uint32_t crc2 = crc32(0L, Z_NULL, 0);
+		crc2 = crc32(crc1,*((const Bytef *) (pkt+length+12)), 4);
+		*/
+		//Crc2
+		*((uint32_t*)(buf+length+12)) = htonl(1024);
+	}
 	return PKT_OK;
 }
 
@@ -162,7 +207,7 @@ uint8_t  pkt_get_seqnum(const pkt_t* pkt)
 uint16_t pkt_get_length(const pkt_t* pkt)
 {
 	if(pkt->TR == 0)
-		return pkt->LENGTH;
+		return ntohs(pkt->LENGTH);
 	return 0;
 }
 
@@ -202,6 +247,8 @@ pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type)
 pkt_status_code pkt_set_tr(pkt_t *pkt, const uint8_t tr)
 {
 	if(pkt->TYPE == PTYPE_DATA){
+		if(tr>1)
+			return E_TR;
 		pkt->TR = tr;
 		return PKT_OK;
 	}
@@ -218,6 +265,8 @@ pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window)
 
 pkt_status_code pkt_set_seqnum(pkt_t *pkt, const uint8_t seqnum)
 {
+	if(seqnum> 255)
+		return E_SEQNUM;
 	pkt->SEQNUM = seqnum;
 	return PKT_OK;
 }
@@ -226,7 +275,7 @@ pkt_status_code pkt_set_length(pkt_t *pkt, const uint16_t length)
 {
 	if(length > MAX_PAYLOAD_SIZE)
 		return E_LENGTH;
-	pkt->LENGTH = length;
+	pkt->LENGTH = htons(length);
 	return PKT_OK;
 }
 
@@ -238,13 +287,13 @@ pkt_status_code pkt_set_timestamp(pkt_t *pkt, const uint32_t timestamp)
 
 pkt_status_code pkt_set_crc1(pkt_t *pkt, const uint32_t crc1)
 {
-	pkt->CRC1 = crc1;
+	pkt->CRC1 = htonl(crc1);
 	return PKT_OK;
 }
 
 pkt_status_code pkt_set_crc2(pkt_t *pkt, const uint32_t crc2)
 {
-	pkt->CRC2 = crc2;
+	pkt->CRC2 = htonl(crc2);
 	return PKT_OK;
 }
 
