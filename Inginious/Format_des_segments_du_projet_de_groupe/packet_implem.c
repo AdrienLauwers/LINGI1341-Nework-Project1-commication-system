@@ -112,7 +112,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 	uint32_t new_crc1 = crc32(0L, Z_NULL, 0);
 
-	new_crc1 = crc32(new_crc1,(const Bytef*) data, 4);
+	new_crc1 = crc32(new_crc1,(const Bytef*) data, 8);
 
 
 	if(crc1 != new_crc1)
@@ -154,9 +154,10 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
+printf("\n size : %lu \n", *len);
 	size_t length = pkt_get_length(pkt);
     size_t length_tot = pkt_get_length(pkt);
-	if(pkt_get_tr(pkt)==0)
+	if(pkt_get_tr(pkt)==0 && length > 0)
 		length_tot += 4;
 	if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
 		return E_NOMEM;
@@ -179,7 +180,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	}
 
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
-	crc1 = crc32(crc1,(const Bytef *) buf, 4);
+	crc1 = crc32(crc1,(const Bytef *) buf, 8);
 
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
@@ -194,6 +195,9 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 		//Crc2
 		*((uint32_t*)(buf+length+12)) = htonl(crc2);
 	}
+
+    *len = length_tot + 12;
+    printf("\n size : %lu \n", *len);
 
 	return PKT_OK;
 }
@@ -237,7 +241,9 @@ uint32_t pkt_get_crc1   (const pkt_t* pkt)
 
 uint32_t pkt_get_crc2   (const pkt_t* pkt)
 {
-	return ntohl(pkt->CRC2);
+    if(pkt_get_tr(pkt) == 0 && pkt_get_length(pkt) != 0)
+	   return ntohl(pkt->CRC2);
+    return 0;
 }
 
 const char* pkt_get_payload(const pkt_t* pkt)
