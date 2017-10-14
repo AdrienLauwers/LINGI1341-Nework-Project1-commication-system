@@ -65,6 +65,7 @@ void length(void) {
 	pkt_t * pkt = pkt_new();
 
 	int random = rand()%513;
+
 	pkt_status_code return_status = pkt_set_length(pkt, random);
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	return_status = pkt_set_tr(pkt, 0);
@@ -115,10 +116,13 @@ void crc2(void) {
 void payload(void) {
 	pkt_t * pkt = pkt_new();
 	char * buf = "Test de 15 char";
+	char buf2[100];
+	memcpy(buf2, buf, 15);
 	pkt_status_code return_status = pkt_set_payload(pkt, buf, 16);
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	CU_ASSERT_STRING_EQUAL(pkt_get_payload(pkt), buf);
 	CU_ASSERT_NOT_EQUAL(pkt_get_length(pkt), 1);
+	return_status = pkt_set_payload(pkt, buf2, 100);
 
 	pkt_del(pkt);
 }
@@ -128,7 +132,6 @@ void encode(void) {
 	pkt_t * pkt2 = pkt_new();
 	char * buf = "Test de 15 char";
 	char data[528];
-	const char data2[528];
 	pkt_status_code return_status = pkt_set_payload(pkt1, buf, 16);
 	size_t len = 528;
 	return_status = pkt_encode(pkt1, data,  &len);
@@ -140,6 +143,7 @@ void encode(void) {
 	CU_ASSERT_EQUAL(pkt_get_type(pkt1), pkt_get_type(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_window(pkt1), pkt_get_window(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_timestamp(pkt1), pkt_get_timestamp(pkt2));
+
 	pkt_del(pkt1);
 	pkt_del(pkt2);
 

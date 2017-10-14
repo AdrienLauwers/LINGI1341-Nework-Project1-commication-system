@@ -8,9 +8,9 @@
 /* Your code will be inserted here */
 
 struct __attribute__((__packed__)) pkt {
-	ptypes_t TYPE : 2;
+    uint8_t WINDOW : 5;
 	uint8_t TR : 1;
-	uint8_t WINDOW : 5;
+	uint8_t TYPE : 2;
 	uint8_t SEQNUM;
 	uint16_t LENGTH;
 	uint32_t TIMESTAMP;
@@ -18,7 +18,7 @@ struct __attribute__((__packed__)) pkt {
 	char * PAYLOAD;
 	uint32_t CRC2;
 };
-
+int test = 0;
 /* Extra code */
 /* Your code will be inserted here */
 
@@ -31,8 +31,9 @@ pkt_t* pkt_new()
 		perror("Erreur lors du malloc du package");
 		return NULL;
 	}
-	new_pkt->PAYLOAD = (char *) malloc(sizeof(char));
+	new_pkt->PAYLOAD = (char *) calloc(sizeof(char)*512, 1);
 	if(new_pkt->PAYLOAD == NULL){
+        free(new_pkt);
 		perror("Erreur lors du malloc du paylod");
 		return NULL;
 	}
@@ -40,7 +41,7 @@ pkt_t* pkt_new()
 	new_pkt->TYPE = 1;
 	new_pkt->TR = 0;
 	new_pkt->WINDOW = 0;
-	new_pkt->LENGTH = 1;
+	new_pkt->LENGTH = htons(0);
 	new_pkt->TIMESTAMP = 0;
 	new_pkt->CRC1 = 0;
 	new_pkt->CRC2 = 0;
@@ -55,6 +56,7 @@ void pkt_del(pkt_t *pkt)
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
+
 	if(len == 0)
 		return E_UNCONSISTENT;
 
@@ -104,37 +106,48 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	if(verif_status != PKT_OK)
 		return verif_status;
 
+
 	//Décodage CRC1
-	/*uint32_t crc1 = ntohs(*((uint32_t *)data + 4));
+	uint32_t crc1 = ntohl(*((uint32_t *)(data + 8)));
+
 	uint32_t new_crc1 = crc32(0L, Z_NULL, 0);
 
 	new_crc1 = crc32(new_crc1,(const Bytef*) data, 4);
 
+
 	if(crc1 != new_crc1)
 		return E_CRC;
-		*/
+    verif_status = pkt_set_crc1(pkt, crc1);
+    if(verif_status != PKT_OK)
+		return verif_status;
+
+
 	//Décodage payload
 	if(pkt_length <= 0){
-		//TODO
+        //TODO
 	}
 	else{
 	  verif_status = pkt_set_payload(pkt, &(data[12]), pkt_length);
 		if(verif_status != PKT_OK)
 			return verif_status;
 	}
-	/*
+
 	if(pkt_length > 0 && pkt_get_tr(pkt) == 0){
 		//Décodage CRC2
-		uint32_t crc2 = ntohs(*((uint32_t *)data + 12 + pkt_length));
-		char buf[pkt_get_length(pkt)];
-		buf = pkt_get_payload(pkt);
+		uint32_t crc2 = ntohl(*((uint32_t *)(data + 12 + pkt_length)));
+		 const char *buf = pkt_get_payload(pkt);
+
 
 		uint32_t new_crc2 = crc32(0L, Z_NULL, 0);
-		new_crc2 = crc32(new_crc2,(const Bytef *) buf, 4);
+		new_crc2 = crc32(new_crc2,(const Bytef *) buf, pkt_length);
 		if(crc2 != new_crc2)
 			return E_CRC;
+        verif_status = pkt_set_crc2(pkt, crc2);
+        if(verif_status != PKT_OK)
+			return verif_status;
+
 	}
-	*/
+
 
 	return verif_status;
 }
@@ -142,9 +155,10 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
 	size_t length = pkt_get_length(pkt);
+    size_t length_tot = pkt_get_length(pkt);
 	if(pkt_get_tr(pkt)==0)
-		length += 4;
-	if(*len < length + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
+		length_tot += 4;
+	if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
 		return E_NOMEM;
 
 
@@ -163,24 +177,24 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	for(i = 1 ; i<8 ; i++){
 		buf[i] = pack[i];
 	}
-	/*
+
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
-	crc1 = crc32(crc1,(const Bytef *) pkt, 4);
-	*/
+	crc1 = crc32(crc1,(const Bytef *) buf, 4);
+
 	//Crc1
-	*((uint32_t *) (buf + 8)) = htonl(1024);
+	*((uint32_t *) (buf + 8)) = htonl(crc1);
 	const char * payload = pkt_get_payload(pkt);
 	for(i = 0 ; i<length; i++){
 		buf[12+i] = payload[i];
 	}
 	if(pkt_get_tr(pkt) == 0){
-		/*
+
 		uint32_t crc2 = crc32(0L, Z_NULL, 0);
-		crc2 = crc32(crc1,*((const Bytef *) (pkt+length+12)), 4);
-		*/
+		crc2 = crc32(crc2,((const Bytef *)payload), length);
 		//Crc2
-		*((uint32_t*)(buf+length+12)) = htonl(1024);
+		*((uint32_t*)(buf+length+12)) = htonl(crc2);
 	}
+
 	return PKT_OK;
 }
 
@@ -265,8 +279,6 @@ pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window)
 
 pkt_status_code pkt_set_seqnum(pkt_t *pkt, const uint8_t seqnum)
 {
-	if(seqnum> 255)
-		return E_SEQNUM;
 	pkt->SEQNUM = seqnum;
 	return PKT_OK;
 }
@@ -304,6 +316,7 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 	pkt_status_code return_status = pkt_set_length(pkt, length);
 
 	if(return_status == PKT_OK){
+        pkt->PAYLOAD = realloc(pkt->PAYLOAD, length);
 		memcpy(pkt->PAYLOAD, data, length);
 	}
 	return return_status;
