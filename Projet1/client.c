@@ -76,7 +76,10 @@ void send_data(char *hostname, int port, char* file){
 					pkt_del(pkt_send);
       				return;
 				}
-				write(sfd, packet_encoded,length);
+				if(write(sfd, packet_encoded,length) < 0)
+				{
+					fprintf(stderr, "An occur failed while sending a packet.");
+				}
 			}
 		}
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
