@@ -43,8 +43,8 @@ pkt_t* pkt_new()
 	new_pkt->WINDOW = 0;
 	new_pkt->LENGTH = htons(0);
 	new_pkt->TIMESTAMP = 0;
-	new_pkt->CRC1 = 0;
-	new_pkt->CRC2 = 0;
+	new_pkt->CRC1 = htonl(0);
+	new_pkt->CRC2 = htonl(0);
 	return new_pkt;
 }
 
