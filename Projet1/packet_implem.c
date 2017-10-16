@@ -184,6 +184,7 @@ printf("\n size : %lu \n", *len);
 
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
+	pkt_set_crc1(pkt, crc1);
 	const char * payload = pkt_get_payload(pkt);
 	for(i = 0 ; i<length; i++){
 		buf[12+i] = payload[i];
@@ -194,6 +195,7 @@ printf("\n size : %lu \n", *len);
 		crc2 = crc32(crc2,((const Bytef *)payload), length);
 		//Crc2
 		*((uint32_t*)(buf+length+12)) = htonl(crc2);
+		pkt_set_crc2(pkt, crc2);
 	}
 
     *len = length_tot + 12;

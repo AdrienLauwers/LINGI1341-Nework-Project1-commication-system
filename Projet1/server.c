@@ -14,7 +14,6 @@
 #include <netinet/in.h> /* * sockaddr_in6 */
 #include <netdb.h>
 #include <math.h>
-#include "socket.h"
 
 void receive_data(char* hostname, int port, char* file){
 

@@ -140,6 +140,8 @@ void encode(void) {
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	CU_ASSERT_STRING_EQUAL(buf, pkt_get_payload(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_tr(pkt1), pkt_get_tr(pkt2));
+	CU_ASSERR_EQUAL(pkt_get_crc1(pkt1), pkt_get_crc1(pkt2));
+	CU_ASSERR_EQUAL(pkt_get_crc2(pkt1), pkt_get_crc2(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_type(pkt1), pkt_get_type(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_window(pkt1), pkt_get_window(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_timestamp(pkt1), pkt_get_timestamp(pkt2));
