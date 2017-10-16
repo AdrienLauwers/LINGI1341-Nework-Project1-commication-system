@@ -28,7 +28,7 @@ void send_data(char *hostname, int port, char* file){
 	int fd = open((const char *)file, O_RDONLY);
 	pkt_t* pkt_send = pkt_new();
 	if(pkt_send == NULL){
-      fprintf(stderr, "An occur failed with the creation of the packet.");
+     fprintf(stderr, "An occur failed while creating a data packet.");
 		pkt_del(pkt_send);
       return;
     }	
@@ -42,12 +42,13 @@ void send_data(char *hostname, int port, char* file){
   	tv.tv_usec = 0;
 	
 	char buffer_read[MAX_PAYLOAD_SIZE]; 
-	
+	char * packet_encoded[528];
 	fd_set read_set;
-	while(endFile == 0 || bufferEmpty==1)
+	while(endFile == 0)
 	{
 		FD_ZERO(&read_set);
 		FD_SET(fd, &read_set);
+		FD_SET(sfd, &read_set); 
 		
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
 		//On considère que la variable peut être modifiée après l'appel de la fonction, ont utilise donc une autre structure.
@@ -68,22 +69,18 @@ void send_data(char *hostname, int port, char* file){
 				return;
 	   		}	
 			else if(length > 0){
-				/*if(isEmpty == 0) {
-					indexl1 = index1;
-					seql = seqnum;
-					isEmpty = 1;
+				pkt_set_payload(pkt_send,&buffer_read,length);
+				if(pkt_encode(pkt_send,packet_encoded,&length)!= PKT_OK)
+				{
+					fprintf(stderr, "An occur failed while creating a data packet.");
+					pkt_del(pkt_send);
+      				return;
 				}
-
-				if(encode(env, &seqnum, buf1, length, & (buffer1[index1]))!=0){//, ntv) != 0) {	
-					pkt_del(env);
-					pkt_del(ack);
-					return;
-				}
-				send(sfd, (void*)(buffer1[index1].buff), buffer1[index1].len,0);
-
-				index1 = (index1 + 1)%window;*/
+				write(sfd, packet_encoded,length);
 			}
 		}
+		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
+		endFile = 1;
 	}
 	
 	printf("%d %d",endFile,bufferEmpty);
