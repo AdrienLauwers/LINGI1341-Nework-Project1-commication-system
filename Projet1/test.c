@@ -82,7 +82,7 @@ void length(void) {
 //7
 void timestamp(void) {
 	pkt_t * pkt = pkt_new();
-	int random = rand()%4294967296;
+	uint32_t random = rand()%4294967296;
 	pkt_status_code return_status = pkt_set_timestamp(pkt, random);
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	CU_ASSERT_EQUAL(pkt_get_timestamp(pkt), random);
@@ -90,27 +90,6 @@ void timestamp(void) {
 	pkt_del(pkt);
 }
 
-//8
-void crc1(void) {
-	pkt_t * pkt = pkt_new();
-	int random = rand()%4294967296;
-	pkt_status_code return_status = pkt_set_crc1(pkt, random);
-	CU_ASSERT_EQUAL(return_status, PKT_OK);
-	CU_ASSERT_EQUAL(pkt_get_crc1(pkt), random);
-
-	pkt_del(pkt);
-}
-
-//9
-void crc2(void) {
-	pkt_t * pkt = pkt_new();
-	int random = rand()%4294967296;
-	pkt_status_code return_status = pkt_set_crc2(pkt, random);
-	CU_ASSERT_EQUAL(return_status, PKT_OK);
-	CU_ASSERT_EQUAL(pkt_get_crc2(pkt), random);
-
-	pkt_del(pkt);
-}
 
 //10
 void payload(void) {
@@ -140,8 +119,8 @@ void encode(void) {
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	CU_ASSERT_STRING_EQUAL(buf, pkt_get_payload(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_tr(pkt1), pkt_get_tr(pkt2));
-	CU_ASSERR_EQUAL(pkt_get_crc1(pkt1), pkt_get_crc1(pkt2));
-	CU_ASSERR_EQUAL(pkt_get_crc2(pkt1), pkt_get_crc2(pkt2));
+	CU_ASSERT_EQUAL(pkt_get_crc1(pkt1), pkt_get_crc1(pkt2));
+	CU_ASSERT_EQUAL(pkt_get_crc2(pkt1), pkt_get_crc2(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_type(pkt1), pkt_get_type(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_window(pkt1), pkt_get_window(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_timestamp(pkt1), pkt_get_timestamp(pkt2));
@@ -151,7 +130,7 @@ void encode(void) {
 
 }
 
-int main(int argc, char* argv[]){
+int main(){
   CU_pSuite pSuite = NULL;
 	/* initialisation de la suite*/
 	if(CUE_SUCCESS != CU_initialize_registry())
@@ -172,8 +151,6 @@ int main(int argc, char* argv[]){
 			NULL == CU_add_test(pSuite, "pkt_get_set_seqnum", seqnum)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_length", length)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_timestamp", timestamp)||
-			NULL == CU_add_test(pSuite, "pkt_get_set_crc1", crc1)||
-			NULL == CU_add_test(pSuite, "pkt_get_set_crc2", crc2)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_payload", payload)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_encode", encode)
 			)

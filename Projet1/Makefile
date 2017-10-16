@@ -10,10 +10,10 @@ CFLAGS += -D_POSIX_C_SOURCE=201112L -D_XOPEN_SOURCE # feature_test_macros for ge
 
 # We have no libraries to link against except libc, but we want to keep
 # the symbols for debugging
-LDFLAGS= -rdynamic
+LDFLAGS= -rdynamic -lcunit -lz
 
 # Default target
-all: clean receiver
+all: clean receiver test
 
 # If we run `make debug` instead, keep the debug symbols for gdb
 # and define the DEBUG macro.
@@ -21,7 +21,9 @@ debug: CFLAGS += -g -DDEBUG -Wno-unused-parameter -fno-omit-frame-pointer
 debug: clean receiver
 
 # We use an implicit rule to build an executable named 'chat'
-receiver: receiver.o socket.o server.o client.o 
+receiver: receiver.o socket.o server.o client.o packet_implem.o
+
+test: test.o socket.o server.o client.o packet_implem.o
 
 .PHONY: clean
 
