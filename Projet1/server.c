@@ -16,7 +16,8 @@
 #include <math.h>
 
 void receive_data(char* hostname, int port, char* file){
-
+	//A DELETE
+	printf("%s",file);
   //On récupere la real address
   struct sockaddr_in6 real_addr;
   memset(&real_addr, 0, sizeof(real_addr));

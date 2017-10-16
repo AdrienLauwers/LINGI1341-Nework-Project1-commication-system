@@ -48,6 +48,7 @@ pkt_t* pkt_new()
 	return new_pkt;
 }
 
+
 void pkt_del(pkt_t *pkt)
 {
 	free(pkt->PAYLOAD);

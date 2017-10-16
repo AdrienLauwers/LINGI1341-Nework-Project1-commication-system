@@ -21,9 +21,9 @@ debug: CFLAGS += -g -DDEBUG -Wno-unused-parameter -fno-omit-frame-pointer
 debug: clean receiver
 
 # We use an implicit rule to build an executable named 'chat'
-receiver: receiver.o socket.o server.o
+receiver: receiver.o socket.o server.o client.o 
 
 .PHONY: clean
 
 clean:
-	@rm -f receiver receiver.o socket.o server.o
+	@rm -f receiver receiver.o socket.o server.o client.o
