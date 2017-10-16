@@ -23,7 +23,7 @@ void send_data(char *hostname, int port, char* file){
     	fprintf(stderr, "Address '%s' is not recognized.", hostname);
    		 return;
 	}
-	
+
 	int sfd = create_socket(NULL, 0,&real_addr, port);
 	int fd = open((const char *)file, O_RDONLY);
 	pkt_t* pkt_send = pkt_new();
@@ -31,34 +31,34 @@ void send_data(char *hostname, int port, char* file){
      fprintf(stderr, "An occur failed while creating a data packet.");
 		pkt_del(pkt_send);
       return;
-    }	
+    }
 	pkt_set_window(pkt_send,1);
-	
+
 	int bufferEmpty = 0;
 	int endFile = 0;
 	int max_length = 0;
 	struct timeval tv;
   	tv.tv_sec = 5;
   	tv.tv_usec = 0;
-	
-	char buffer_read[MAX_PAYLOAD_SIZE]; 
-	char * packet_encoded[528];
+
+	char buffer_read[MAX_PAYLOAD_SIZE];
+	char packet_encoded[528];
 	fd_set read_set;
 	while(endFile == 0)
 	{
 		FD_ZERO(&read_set);
 		FD_SET(fd, &read_set);
-		FD_SET(sfd, &read_set); 
-		
+		FD_SET(sfd, &read_set);
+
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
 		//On considère que la variable peut être modifiée après l'appel de la fonction, ont utilise donc une autre structure.
-		struct timeval newtv = tv; 
-		select(max_length, &read_set,NULL, NULL, &newtv); 
-		
-		if(FD_ISSET(fd, &read_set)) { 
+		struct timeval newtv = tv;
+		select(max_length, &read_set,NULL, NULL, &newtv);
+
+		if(FD_ISSET(fd, &read_set)) {
 			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
-			
-			if(length == 0){ 
+
+			if(length == 0){
 				//SI TAILLE 0 => Fin de fichier
 				endFile =1;
 			}
@@ -67,10 +67,10 @@ void send_data(char *hostname, int port, char* file){
 				perror("Error reading file");
 				pkt_del(pkt_send);
 				return;
-	   		}	
+	   		}
 			else if(length > 0){
-				pkt_set_payload(pkt_send,&buffer_read,length);
-				if(pkt_encode(pkt_send,packet_encoded,&length)!= PKT_OK)
+				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
+				if(pkt_encode(pkt_send,packet_encoded,(size_t *)&length)!= PKT_OK)
 				{
 					fprintf(stderr, "An occur failed while creating a data packet.");
 					pkt_del(pkt_send);
@@ -82,6 +82,6 @@ void send_data(char *hostname, int port, char* file){
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
 		endFile = 1;
 	}
-	
+
 	printf("%d %d",endFile,bufferEmpty);
 }

@@ -12,6 +12,7 @@
 #include <netinet/in.h> /* * sockaddr_in6 */
 #include <netdb.h>
 #include "packet_interface.h"
+#include "client.h"
 
 int
 main (int argc, char **argv)
@@ -52,6 +53,6 @@ main (int argc, char **argv)
   hostname = argv[index];
   port = atoi(argv[index+1]);
 
-  //TODO send_data(hostname, port, fichier);
+  send_data(hostname, port, fichier);
   return EXIT_SUCCESS;
 }

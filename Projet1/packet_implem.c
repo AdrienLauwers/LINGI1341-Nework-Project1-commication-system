@@ -18,9 +18,6 @@ struct __attribute__((__packed__)) pkt {
 	char * PAYLOAD;
 	uint32_t CRC2;
 };
-int test = 0;
-/* Extra code */
-/* Your code will be inserted here */
 
 
 pkt_t* pkt_new()
