@@ -26,6 +26,7 @@ void send_data(char *hostname, int port, char* file){
 
 	int sfd = create_socket(NULL, 0,&real_addr, port);
 	int fd = open((const char *)file, O_RDONLY);
+	
 	pkt_t* pkt_send = pkt_new();
 	if(pkt_send == NULL){
      fprintf(stderr, "An occur failed while creating a data packet.");
@@ -33,7 +34,13 @@ void send_data(char *hostname, int port, char* file){
       return;
     }
 	pkt_set_window(pkt_send,1);
-
+	pkt_t* pkt_ack = pkt_new();
+	if(pkt_ack == NULL){
+     fprintf(stderr, "An occur failed while creating a data packet.");
+		pkt_del(pkt_ack);
+		pkt_del(pkt_send);
+      return;
+    }
 	int bufferEmpty = 0;
 	int endFile = 0;
 	int max_length = 0;
@@ -42,7 +49,7 @@ void send_data(char *hostname, int port, char* file){
   	tv.tv_usec = 0;
 
 	char buffer_read[MAX_PAYLOAD_SIZE];
-	char packet_encoded[528];
+	char packet_encoded[1024];
 	fd_set read_set;
 	while(endFile == 0)
 	{
@@ -66,6 +73,7 @@ void send_data(char *hostname, int port, char* file){
 				//Si TAILLE -1 => Erreur
 				perror("Error reading file");
 				pkt_del(pkt_send);
+				pkt_del(pkt_ack);
 				return;
 	   		}
 			else if(length > 0){
@@ -74,17 +82,33 @@ void send_data(char *hostname, int port, char* file){
 				{
 					fprintf(stderr, "An occur failed while creating a data packet.");
 					pkt_del(pkt_send);
+					pkt_del(pkt_ack);
       				return;
 				}
 				if(write(sfd, packet_encoded,length) < 0)
 				{
 					fprintf(stderr, "An occur failed while sending a packet.");
+					pkt_del(pkt_send);
+					pkt_del(pkt_ack);
+      				return;
 				}
 			}
 		}
+		/*else if( FD_ISSET(sfd, &read_set)){ //on a reçut un aquittement ou un nack
+			int length = read(sfd, (void *)packet_encoded, 1024);
+			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) == PKT_OK){
+				fprintf(stdout,"BIEN RECU");
+			}
+		}*/
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
 		endFile = 1;
 	}
-
+	
+	/*
+	send(sfd, (const void *)EOF, 0,0);
+	close(sfd);
+	//close(fd) ??
+	pkt_del(pkt_ack);
+  	pkt_del(pkt_send);	*/
 	printf("%d %d",endFile,bufferEmpty);
 }
