@@ -79,7 +79,7 @@ void receive_data(char* hostname, int port, char* file){
 
 	int fd;
   if(file != NULL)
-    fd = open((const char *)file,O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR );
+    fd = open((const char *)file, O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR );
   else
     fd = STDOUT_FILENO;
 
@@ -106,7 +106,6 @@ void receive_data(char* hostname, int port, char* file){
 	fd_set read_set;
 	while(endFile == 0){
 
-    printf("Test \n");
 
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
@@ -130,27 +129,27 @@ void receive_data(char* hostname, int port, char* file){
 				return;
 	   		}
 			else if(length > 0){
-        printf("Hallo ? \n");
-        write(fd, (void *)packet_encoded, length);
 				if(pkt_decode((const char*)packet_encoded,(size_t)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
-					int seqnum = pkt_get_seqnum(pkt_rcv);
+
+          write(fd, (void *)pkt_get_payload(pkt_rcv), pkt_get_length(pkt_rcv));
+					//int seqnum = pkt_get_seqnum(pkt_rcv);
 					//CAS OU ON RECOIS SEULEMENT UN HEADER
 					if(length != 4)
 					{
+            /*
 						if (send_ack(pkt_ack, seqnum, sfd ,PTYPE_ACK) !=0){
 							pkt_del(pkt_rcv);
 							pkt_del(pkt_ack);
 
 							//Pas sur du return..
 							//return;
-						}
-            printf("Salut");
+						}*/
 					}
 					else
 					{
 
-						send_ack(pkt_ack, seqnum, sfd,PTYPE_NACK);
+						//send_ack(pkt_ack, seqnum, sfd,PTYPE_NACK);
 						//Pas de check d'erreur de message car peut etre seqnum corrompu ?
 						//Du coup, méthode env_ack bonne ?
 

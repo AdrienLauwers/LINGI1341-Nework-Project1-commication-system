@@ -140,7 +140,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 	}
 
-
+	pkt_print(pkt);
 	return verif_status;
 }
 
@@ -190,7 +190,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	}
 
     *len = length_tot + 12;
-
+		pkt_print((pkt_t *)pkt);
 	return PKT_OK;
 }
 
@@ -320,4 +320,17 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 		memcpy(pkt->PAYLOAD, data, length);
 	}
 	return return_status;
+}
+
+void pkt_print(pkt_t * pkt){
+	printf("Print du packet courant : \n");
+	printf("	- Type : %u\n", pkt_get_type(pkt));
+	printf("	- TR : %u\n", pkt_get_tr(pkt));
+	printf("	- Seqnum : %u\n", pkt_get_seqnum(pkt));
+	printf("	- Window : %u\n", pkt_get_window(pkt));
+	printf("	- Length : %u\n", pkt_get_length(pkt));
+	printf("	- Timestamp : %u\n", pkt_get_timestamp(pkt));
+	printf("	- CRC1 : %u\n", pkt_get_crc1(pkt));
+	printf("	- Payload : %s\n", pkt_get_payload(pkt));
+	printf("	- CRC2 : %u\n", pkt_get_crc2(pkt));
 }
