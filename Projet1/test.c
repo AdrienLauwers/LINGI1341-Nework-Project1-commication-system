@@ -3,6 +3,9 @@
 #include <CUnit/Basic.h>
 #include "packet_interface.h"
 
+static uint8_t pkt_tab[] = {0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+
+
 //1
 void new(void) {
 	pkt_t* pkt = pkt_new();
@@ -131,6 +134,7 @@ void encode(void) {
 }
 
 int main(){
+	printf("Salut : %u \n", pkt_tab[1]);
   CU_pSuite pSuite = NULL;
 	/* initialisation de la suite*/
 	if(CUE_SUCCESS != CU_initialize_registry())

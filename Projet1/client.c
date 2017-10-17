@@ -25,8 +25,12 @@ void send_data(char *hostname, int port, char* file){
 	}
 
 	int sfd = create_socket(NULL, 0,&real_addr, port);
-	int fd = open((const char *)file, O_RDONLY);
-	
+	int fd;
+	if(file != NULL)
+		fd = open((const char *)file, O_RDONLY);
+	else
+		fd = STDIN_FILENO;
+
 	pkt_t* pkt_send = pkt_new();
 	if(pkt_send == NULL){
      fprintf(stderr, "An occur failed while creating a data packet.");
@@ -102,13 +106,14 @@ void send_data(char *hostname, int port, char* file){
 		}*/
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
 		endFile = 1;
+		//endFile = feof(stdin);
 	}
-	
+
 	/*
 	send(sfd, (const void *)EOF, 0,0);
 	close(sfd);
 	//close(fd) ??
 	pkt_del(pkt_ack);
   	pkt_del(pkt_send);	*/
-	printf("%d %d",endFile,bufferEmpty);
+	printf("%d %d\n",endFile,bufferEmpty);
 }

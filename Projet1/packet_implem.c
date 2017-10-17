@@ -28,13 +28,7 @@ pkt_t* pkt_new()
 		perror("Erreur lors du malloc du package");
 		return NULL;
 	}
-	new_pkt->PAYLOAD = (char *) calloc(sizeof(char)*512, 1);
-	if(new_pkt->PAYLOAD == NULL){
-        free(new_pkt);
-		perror("Erreur lors du malloc du paylod");
-		return NULL;
-	}
-	memset(new_pkt->PAYLOAD, 0, 1);
+	new_pkt->PAYLOAD = NULL;
 	new_pkt->TYPE = 1;
 	new_pkt->TR = 0;
 	new_pkt->WINDOW = 0;
@@ -47,7 +41,8 @@ pkt_t* pkt_new()
 
 void pkt_del(pkt_t *pkt)
 {
-	free(pkt->PAYLOAD);
+	if(pkt_get_payload(pkt) != NULL)
+		free(pkt->PAYLOAD);
 	free(pkt);
 }
 
@@ -151,7 +146,6 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
-printf("\n size : %lu \n", *len);
 	size_t length = pkt_get_length(pkt);
     size_t length_tot = pkt_get_length(pkt);
 	if(pkt_get_tr(pkt)==0 && length > 0)
@@ -196,7 +190,6 @@ printf("\n size : %lu \n", *len);
 	}
 
     *len = length_tot + 12;
-    printf("\n size : %lu \n", *len);
 
 	return PKT_OK;
 }
@@ -319,9 +312,11 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 								const uint16_t length)
 {
 	pkt_status_code return_status = pkt_set_length(pkt, length);
+	if(pkt_get_payload(pkt) != NULL)
+		free(pkt->PAYLOAD);
 
 	if(return_status == PKT_OK){
-        pkt->PAYLOAD = realloc(pkt->PAYLOAD, length);
+        pkt->PAYLOAD = malloc(length);
 		memcpy(pkt->PAYLOAD, data, length);
 	}
 	return return_status;
