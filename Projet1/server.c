@@ -132,7 +132,10 @@ void receive_data(char* hostname, int port, char* file){
 				if(pkt_decode((const char*)packet_encoded,(size_t)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
 
-          write(fd, (void *)pkt_get_payload(pkt_rcv), pkt_get_length(pkt_rcv));
+          				if(write(fd, (void *)pkt_get_payload(pkt_rcv), pkt_get_length(pkt_rcv)) < 0)
+						{
+							fprintf(stderr,"ERROR SENDING PACKET");
+						}
 					//int seqnum = pkt_get_seqnum(pkt_rcv);
 					//CAS OU ON RECOIS SEULEMENT UN HEADER
 					if(length != 4)

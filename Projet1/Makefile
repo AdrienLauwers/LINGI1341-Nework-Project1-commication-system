@@ -10,7 +10,7 @@ CFLAGS += -D_POSIX_C_SOURCE=201112L -D_XOPEN_SOURCE # feature_test_macros for ge
 
 # We have no libraries to link against except libc, but we want to keep
 # the symbols for debugging
-LDFLAGS= -rdynamic -lcunit -lz
+LDFLAGS= -lz -rdynamic
 
 # Default target
 all: clean receiver sender test
