@@ -16,6 +16,48 @@
 #include <netdb.h>
 #include <math.h>
 
+int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
+  printf("SEND ACK 1\n");
+  pkt_status_code return_status;
+
+  return_status = pkt_set_seqnum(pkt_ack, seqnum);
+  if(return_status != PKT_OK){
+    perror("Creation de l'acknowledge : ");
+    return -1;
+  }
+
+  if(ack == PTYPE_ACK)
+    return_status = pkt_set_type(pkt_ack, PTYPE_ACK);
+  else if(ack == PTYPE_NACK)
+    return_status = pkt_set_type(pkt_ack, PTYPE_NACK);
+  if(return_status != PKT_OK){
+    perror("Creation de l'acknowledge : ");
+    return -1;
+  }
+
+
+  return_status = pkt_set_payload(pkt_ack, NULL, 0);
+  if(return_status != PKT_OK){
+    perror("Creation de l'acknowledge : ");
+    return -1;
+  }
+
+  char buf[12];
+  size_t buf_len = 12;
+
+  return_status = pkt_encode(pkt_ack, buf, &buf_len);
+  if(return_status != PKT_OK){
+    perror("Encodage de l'acknowledge");
+    return -1;
+  }
+  send(sfd, buf, buf_len, 0);
+
+  printf("SEND ACK END\n");
+  return 0;
+}
+
+
+
 void receive_data(char* hostname, int port, char* file){
 
 	//On récupere la real address
@@ -95,33 +137,28 @@ void receive_data(char* hostname, int port, char* file){
 						{
 							fprintf(stderr,"ERROR SENDING PACKET");
 						}
-					int seqnum = pkt_get_seqnum(pkt_rcv);
+						int seqnum = pkt_get_seqnum(pkt_rcv);
 					//CAS OU ON RECOIS SEULEMENT UN HEADER
-					if(length != 4)
-					{
-						int err;
-						if ((err=send_ack(pkt_ack, seqnum, sfd ,PTYPE_ACK) ) != 0){
 
-              printf("Test 2 \n");
+
+						if (send_ack(pkt_ack, seqnum, sfd ,PTYPE_ACK) !=0){
 							pkt_del(pkt_rcv);
 							pkt_del(pkt_ack);
 
 							//Pas sur du return..
 							//return;
 						}
-            else{
-              printf("Test 2 \n");
-            }
+						else
+						{
+						 	 printf("END SEND\n");
+						}
 
-					}
-					else
-					{
 
 						send_ack(pkt_ack, seqnum, sfd,PTYPE_NACK);
 						//Pas de check d'erreur de message car peut etre seqnum corrompu ?
 						//Du coup, méthode env_ack bonne ?
 
-					}
+
 				}
 			}
 		}

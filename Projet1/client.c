@@ -99,13 +99,14 @@ void send_data(char *hostname, int port, char* file){
 			}
 		}
 		else if( FD_ISSET(sfd, &read_set)){ //on a reçut un aquittement ou un nack
-			printf("Test \n");
+			printf("ALOOOO");
 			int length = read(sfd, (void *)packet_encoded, 1024);
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) == PKT_OK){
 				fprintf(stdout,"BIEN RECU");
 			}
 		}
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
+		//endFile = 1;
 		endFile = feof(stdin);
 	}
 
