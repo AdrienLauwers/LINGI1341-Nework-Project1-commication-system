@@ -16,7 +16,7 @@
 #include <math.h>
 
 int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
-
+  printf("SEND ACK 1\n");
   pkt_status_code return_status;
 
   return_status = pkt_set_seqnum(pkt_ack, seqnum);
@@ -51,9 +51,10 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
   }
   send(sfd, buf, buf_len, 0);
 
-
+  printf("SEND ACK END\n");
   return 0;
 }
+
 
 
 void receive_data(char* hostname, int port, char* file){
@@ -136,35 +137,38 @@ void receive_data(char* hostname, int port, char* file){
 						{
 							fprintf(stderr,"ERROR SENDING PACKET");
 						}
-					//int seqnum = pkt_get_seqnum(pkt_rcv);
+						int seqnum = pkt_get_seqnum(pkt_rcv);
 					//CAS OU ON RECOIS SEULEMENT UN HEADER
-					if(length != 4)
-					{
-            /*
+					
+            
 						if (send_ack(pkt_ack, seqnum, sfd ,PTYPE_ACK) !=0){
 							pkt_del(pkt_rcv);
 							pkt_del(pkt_ack);
 
 							//Pas sur du return..
 							//return;
-						}*/
-					}
-					else
-					{
+						}
+						else
+						{
+						 	 printf("END SEND\n");
+						}
+						
 
 						//send_ack(pkt_ack, seqnum, sfd,PTYPE_NACK);
 						//Pas de check d'erreur de message car peut etre seqnum corrompu ?
 						//Du coup, méthode env_ack bonne ?
 
-					}
+					
 				}
 			}
 		}
 	}
 
-
+	
 	close(sfd);
 	//close(fd) ??
 	pkt_del(pkt_ack);
   	pkt_del(pkt_rcv);
 }
+
+
