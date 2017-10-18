@@ -134,7 +134,6 @@ void encode(void) {
 }
 
 int main(){
-	printf("Salut : %u \n", pkt_tab[1]);
   CU_pSuite pSuite = NULL;
 	/* initialisation de la suite*/
 	if(CUE_SUCCESS != CU_initialize_registry())
