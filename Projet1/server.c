@@ -102,7 +102,7 @@ void receive_data(char* hostname, int port, char* file){
 						printf("[[[SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
 						//On écrit le buffer et on le vide si le packet attendu a bien été reçu
-						while (buffer_len[index] != -1){
+						while (buffer_len[index]== 1){
 							if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
 							{
 								fprintf(stderr,"ERROR WRITING PACKET");
