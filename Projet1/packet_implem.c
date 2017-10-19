@@ -4,6 +4,8 @@
 #include <string.h>
 #include <zlib.h>
 #include <arpa/inet.h>
+#include <stdint.h>
+#include <time.h>
 /* Extra #includes */
 /* Your code will be inserted here */
 
@@ -166,9 +168,14 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	buf[0] = first_byte;
 	size_t i;
 	char * pack = (char *) pkt;
-	for(i = 1 ; i<8 ; i++){
+	for(i = 1 ; i<4 ; i++){
 		buf[i] = pack[i];
 	}
+	time_t timestamp = time(NULL);
+	pkt_status_code verif_status = pkt_set_timestamp((pkt_t*)pkt, (uint32_t)timestamp);
+	if(verif_status != PKT_OK)
+		return E_UNCONSISTENT;
+	buf[4] = pkt_get_timestamp(pkt);
 
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
 	crc1 = crc32(crc1,(const Bytef *) buf, 8);

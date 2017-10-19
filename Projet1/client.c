@@ -102,7 +102,7 @@ void send_data(char *hostname, int port, char* file){
 			printf("ALOOOO\n");
 			int length = read(sfd, (void *)packet_encoded, 1024);
 			printf("%s\n", packet_encoded);
-			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
+			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) == PKT_OK){
 				fprintf(stdout,"BIEN RECU\n");
 			}
 		}
