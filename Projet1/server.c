@@ -54,7 +54,7 @@ void receive_data(char* hostname, int port, char* file){
 	int window = 3;
 	int index = 0;
 	char *buffer_payload[MAX_WINDOW_SIZE];
-  	size_t buffer_len[MAX_WINDOW_SIZE];
+  	int buffer_len[MAX_WINDOW_SIZE];
 	int seq_exp = 0;
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	char packet_encoded[1024];
@@ -96,35 +96,48 @@ void receive_data(char* hostname, int port, char* file){
 				return;
 	   		}
 			else if(length > 0){
-				if(pkt_decode((const char*)packet_encoded,(size_t)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
+				printf("YOLOOOO\n\n");
+				if(pkt_decode((const char*)packet_encoded,(int)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
+					printf("HEUUU \n\n");
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
-						printf("[[[SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
-						add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
-						//On écrit le buffer et on le vide si le packet attendu a bien été reçu
-						while (buffer_len[index]== 1){
-							if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
+						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
+
+						if(pkt_get_tr(pkt_rcv) == 1){
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK) < 0)
 							{
-								fprintf(stderr,"ERROR WRITING PACKET");
+								fprintf(stderr,"Error sending nack");
 							}
-							buffer_payload[index] = (char *)NULL;
-							buffer_len[index] = -1;
-							//On passe à l'index suivant (l'index ne peut jamais dépasser la window size).
-							index = (index+1)%window;
-							//Le numéro de séquence attendu est incrémenté
-							seq_exp = (seq_exp+1)%256;
+							else
+							{
+								printf("[[[ NACK NUM %d SENT ]]]\n",seq_rcv);
+							}
 						}
+						else{
+							add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
+							//On écrit le buffer et on le vide si le packet attendu a bien été reçu
+							while (buffer_len[index] != -1){
+								if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
+								{
+									fprintf(stderr,"ERROR WRITING PACKET");
+								}
+								buffer_payload[index] = (char *)NULL;
+								buffer_len[index] = -1;
+								//On passe à l'index suivant (l'index ne peut jamais dépasser la window size).
+								index = (index+1)%window;
+								//Le numéro de séquence attendu est incrémenté
+								seq_exp = (seq_exp+1)%256;
+							}
 
-						//CAS OU ON RECOIS SEULEMENT UN HEADER
-
-
-					 	if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK) < 0)
-						{
-							fprintf(stderr,"Error sending ack");
-						}
-						else
-						{
-							printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
+							//CAS OU ON RECOIS SEULEMENT UN HEADER
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK) < 0)
+							{
+								fprintf(stderr,"Error sending ack");
+							}
+							else
+							{
+								printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
+							}
 						}
 
 				}
@@ -140,7 +153,7 @@ void receive_data(char* hostname, int port, char* file){
 }
 
 
-void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, size_t *buffer_len, pkt_t * pkt_rcv, int window){
+void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int *buffer_len, pkt_t * pkt_rcv, int window){
 	   //On regarde si le num de segement recu est compris dans la window   && l  e numéro de segment recu est = ou > que le segment attendu (les numéros de segments inférieurs sont inutiles)
  	   if ((seq_rcv <= seq_exp + window-1 && seq_rcv >= seq_exp)
 		   //Exemple de cas à gérer :

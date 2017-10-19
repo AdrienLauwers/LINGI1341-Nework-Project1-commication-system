@@ -81,6 +81,7 @@ void send_data(char *hostname, int port, char* file){
 				return;
 	   		}
 			else if(length > 0){
+				pkt_set_tr(pkt_send,1);
 				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
 				if(pkt_encode(pkt_send,packet_encoded,(size_t *)&length)!= PKT_OK)
 				{
@@ -98,15 +99,33 @@ void send_data(char *hostname, int port, char* file){
 				}
 				else
 				{
-					printf("SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
+					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
 			}
 		}
 		else if( FD_ISSET(sfd, &read_set)){ //on a reçut un aquittement ou un nack
 			int length = read(sfd, (void *)packet_encoded, 1024);
-			printf("%s\n", packet_encoded);
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
-				fprintf(stdout,"[[[ ACK NUM %d RECIEVED ]]]\n",pkt_get_seqnum(pkt_ack));
+				fprintf(stdout,"[[[ ERROR RECIEVING ACK ]]]\n",pkt_get_seqnum(pkt_ack));
+			}
+			else
+			{
+				if(i == 1)
+				{
+					fprintf(stdout,"[[[ SEGMENT NUM %d RECIEVED ]]]\n",pkt_get_seqnum(pkt_ack));
+				}
+				else if(i == 2)
+				{
+					fprintf(stdout,"[[[ ACK NUM %d RECIEVED ]]]\n",pkt_get_seqnum(pkt_ack));
+				}
+				else if(i == 3)
+				{
+					fprintf(stdout,"[[[ NACK %d RECIEVED ]]]\n",pkt_get_seqnum(pkt_ack));
+				}
+				else{
+					printf("[[[ ERROR ON SEGNUM RECIEVED ]]]\n");
+				}
+				
 			}
 		}
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
