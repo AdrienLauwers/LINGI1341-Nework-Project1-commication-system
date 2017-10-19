@@ -21,7 +21,7 @@ main (int argc, char **argv)
   char *fichier = NULL;
   char *hostname = NULL;
   int port;
-  int c;
+  int c; //Permet la gestion des arguments
   int index;
   opterr = 0;
 
@@ -50,9 +50,11 @@ main (int argc, char **argv)
     fprintf(stderr, "Arguments invalides\n");
     return 1;
   }
+  //Récuperation de l'adresse et du port du receiver fournit par l'utilisateur
   hostname = argv[index];
   port = atoi(argv[index+1]);
-
+  //Lorsqu'on a récupéré les informations fournies par l'utilisateurs, 
+  //nous sommes prêt à attendre l'arrivée de packet
   receive_data(hostname, port, fichier);
   return EXIT_SUCCESS;
 }

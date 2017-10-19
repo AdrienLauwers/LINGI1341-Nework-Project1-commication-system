@@ -18,10 +18,10 @@ int
 main (int argc, char **argv)
 {
 
-  char *fichier = NULL;
-  char *hostname = NULL;
+  char *fichier = NULL; 
+  char *hostname = NULL; 
   int port;
-  int c;
+  int c; //Permet la gestion des arguments
   int index;
   opterr = 0;
 
@@ -50,9 +50,10 @@ main (int argc, char **argv)
     fprintf(stderr, "Arguments invalides\n");
     return 1;
   }
+  //On récupère l'hote et le port du reviever fourni par l'utilisateur
   hostname = argv[index];
   port = atoi(argv[index+1]);
-
+  //Lorsqu'on le port et l'adresse, on appelle send_data pour établir créer un socket,la connection, et envoyer les packets
   send_data(hostname, port, fichier);
   return EXIT_SUCCESS;
 }

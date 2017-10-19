@@ -25,11 +25,13 @@ struct __attribute__((__packed__)) pkt {
 pkt_t* pkt_new()
 {
 	pkt_t *new_pkt;
+	//On alloue de la mémoire pour le pointer
 	new_pkt = (pkt_t*) calloc(sizeof(pkt_t), 1);
 	if(new_pkt == NULL){
 		perror("Erreur lors du malloc du package");
 		return NULL;
 	}
+	//Initialisation des valeures
 	new_pkt->PAYLOAD = NULL;
 	new_pkt->TYPE = 1;
 	new_pkt->TR = 0;
@@ -50,11 +52,12 @@ void pkt_del(pkt_t *pkt)
 
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
-
+	//Impossible que la taille du packet vaut 0
 	if(len == 0)
 		return E_UNCONSISTENT;
-
-	if(len < 8) //trop petit pour contenir le header
+	
+	//trop petit pour contenir le header
+	if(len < 8) /
 		return E_NOHEADER;
 
 
@@ -158,16 +161,21 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
 		return E_NOMEM;
 
-
+	/*****************************************
+	ENCODAGE DU HEADER EN BIG ENDIAN
+	******************************************/
+	//Encodage du type
 	uint8_t first_byte;
 	ptypes_t type = pkt_get_type(pkt);
 	type = type<<6;
+	//Encodage de la variable tr
 	uint8_t tr = pkt_get_tr(pkt);
 	tr = tr<<5;
 	first_byte = type | tr;
+	//Encodage de la window
 	uint8_t window = pkt_get_window(pkt);
 	first_byte = first_byte | window;
-
+	
 	buf[0] = first_byte;
 	size_t i;
 	char * pack = (char *) pkt;
@@ -177,23 +185,29 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	gettimeofday(&tv, NULL);
 	uint32_t time_send = (uint32_t) (tv.tv_sec * 1000000 + tv.tv_usec);
 	printf("\n time : %u", time_send);
+	//Remplissage la variable time_stamp du packet par le temps actuel(sert à calculer le RTT)
 	pkt_status_code verif_status = pkt_set_timestamp((pkt_t*)pkt, time_send);
 	if(verif_status != PKT_OK)
 		return E_UNCONSISTENT;
+	//Encodage du timestap
 	*((uint32_t*)(buf+4)) = pkt_get_timestamp(pkt);
 
+	//Calculer du CRC1
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
 	crc1 = crc32(crc1,(const Bytef *) buf, 8);
 
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
 	pkt_set_crc1((pkt_t*)pkt, crc1);
+	
+	/*****************************************
+	ENCODAGE DU PAYLOAD/CRC2
+	******************************************/
 	const char * payload = pkt_get_payload(pkt);
 	for(i = 0 ; i<length; i++){
 		buf[12+i] = payload[i];
 	}
 	if(pkt_get_tr(pkt) == 0){
-
 		uint32_t crc2 = crc32(0L, Z_NULL, 0);
 		crc2 = crc32(crc2,((const Bytef *)payload), length);
 		//Crc2

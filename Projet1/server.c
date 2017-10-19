@@ -18,15 +18,16 @@
 
 void receive_data(char* hostname, int port, char* file){
 
-	//On récupere la real address
+	
 	struct sockaddr_in6 real_addr;
 	memset(&real_addr, 0, sizeof(real_addr));
+	//Récupération  la real address en IPV6
 	const char* ret_real = real_address(hostname, &real_addr);
 	if (ret_real != NULL){
 		fprintf(stderr, "Address '%s' is not recognized.", hostname);
 		return;
 	}
-	//On crée le socket adéquat
+	//Création du socket en fournissant l'adresse et le port du receiver fournit par l'utilisateur
 	int sfd = create_socket(&real_addr, port, NULL, 0);
 
   	if(sfd < 0)
@@ -38,6 +39,7 @@ void receive_data(char* hostname, int port, char* file){
 
 
 	int fd;
+	//Ouvrage du fichier si l'utilisateur en a fournit hein
   if(file != NULL)
     fd = open((const char *)file, O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR );
   else
@@ -48,14 +50,16 @@ void receive_data(char* hostname, int port, char* file){
 	tv.tv_usec = 0;
 	int endFile = 0;
 	int max_length = 0;
+	//Permet de lire les packet recu
 	pkt_t* pkt_rcv;
+	//Permet d'envoyer des ACK/NACK
 	pkt_t* pkt_ack;
 
 	int window = 3;
-	int index = 0;
-	char *buffer_payload[MAX_WINDOW_SIZE];
-  	int buffer_len[MAX_WINDOW_SIZE];
-	int seq_exp = 0;
+	int index = 0; //Utilisé pour gerer les indice du buffer
+	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+  	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
+	int seq_exp = 0; //Numéro de segment attendu
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	char packet_encoded[1024];
 	fd_set read_set;
@@ -76,33 +80,41 @@ void receive_data(char* hostname, int port, char* file){
 
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
-
+		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
+		//On considère que la variable peut être modifiée après l'appel de la fonction, 
+		//on utilise donc une autre structure.
 		struct timeval newtv = tv;
+		
+		//Permet de gerer plusieurs entrées et sorties à la fois
 		select(max_length, &read_set,NULL, NULL, &newtv);
 
-		if(FD_ISSET(sfd, &read_set )) { //on lit les donnees du client
-      int length = read(sfd,(void *)packet_encoded, 1024);
-
+		//Cas ou on a reçu un packet
+		if(FD_ISSET(sfd, &read_set )) { 
+			//on lit le packet encodée recu
+     		 int length = read(sfd,(void *)packet_encoded, 1024);
+			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
 				endFile = 1;
 				//Cas ou on recoit send(sfd, (const void *)EOF, 0,0);??
 				//On envoie le dernier packet recu ?
 			}
+			//Si taille < 0 => problème
 			else if(length < 0){
 				//On envoie le dernier packet recu ?
 				pkt_del(pkt_rcv);
 				pkt_del(pkt_ack);
 				return;
 	   		}
+			//Si taille > 0 , packet recu valide
 			else if(length > 0){
-				printf("YOLOOOO\n\n");
+				//Décodage du packet(on a besoin que de packet contenant de la data)
 				if(pkt_decode((const char*)packet_encoded,(int)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
-					printf("HEUUU \n\n");
+						
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
-
+						//Si tr == 1 => on envoie un NACK
 						if(pkt_get_tr(pkt_rcv) == 1){
 							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK) < 0)
 							{
@@ -114,13 +126,18 @@ void receive_data(char* hostname, int port, char* file){
 							}
 						}
 						else{
+							//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu 
+							//un packet avec un numéro de segment supérieur au numéro de segment attendu
 							add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
-							//On écrit le buffer et on le vide si le packet attendu a bien été reçu
+							//Ecriture de buffer et on le vide si le packet avec le bon numéro de segment attendu
+							//a bien été reçu
 							while (buffer_len[index] != -1){
+								//Ecriture le pyaload des packets dans le fichier
 								if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
 								{
 									fprintf(stderr,"ERROR WRITING PACKET");
 								}
+								//Réinitialisation du payload écrit
 								buffer_payload[index] = (char *)NULL;
 								buffer_len[index] = -1;
 								//On passe à l'index suivant (l'index ne peut jamais dépasser la window size).
@@ -168,6 +185,7 @@ void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int 
 		  //Calcul de l'indice
 		  //l'ajout de (seq_rcv - seq_exp) permet de placer le payload au bon indice du payload (cas ou le numérod segment recu > le numéro de segment attendu)
 		  int real_ind =(index + (seq_rcv - seq_exp))%window;
+		  //remplissage du buffer
 		  buffer_len[real_ind] = pkt_get_length(pkt_rcv);
 		  buffer_payload[real_ind] = (char *)pkt_get_payload(pkt_rcv);
 	    }
@@ -178,13 +196,14 @@ void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int 
 int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
 
   pkt_status_code return_status;
-
+  //Etablissement des valeurs du ack
   return_status = pkt_set_seqnum(pkt_ack, seqnum);
   if(return_status != PKT_OK){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-
+  
+  //On met le type à PTYPE_ACK ou PTYPE_NACK en fonction du paramètre passé en argument
   if(ack == PTYPE_ACK)
     return_status = pkt_set_type(pkt_ack, PTYPE_ACK);
   else if(ack == PTYPE_NACK)
@@ -194,21 +213,22 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
     return -1;
   }
 
-
+  //Les ack/nack n'ont pas de payload
   return_status = pkt_set_payload(pkt_ack, NULL, 0);
   if(return_status != PKT_OK){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-
+  
   char buf[12];
   size_t buf_len = 12;
-
+  //Encodage du ACK/NACK et remplissage de la variable buf
   return_status = pkt_encode(pkt_ack, buf, &buf_len);
   if(return_status != PKT_OK){
     perror("Encodage de l'acknowledge");
     return -1;
   }
+  //On envoie le ack/nack encodé
   if(write(sfd, buf, buf_len) < 0)
   {
 	  perror("Encodage write ack");

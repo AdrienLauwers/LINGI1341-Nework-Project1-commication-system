@@ -23,18 +23,22 @@ const char * real_address(const char *address, struct sockaddr_in6 *rval){
   struct addrinfo hints;
 
   memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET6;
-  hints.ai_socktype = SOCK_DGRAM;
-  hints.ai_protocol = IPPROTO_UDP;
-  hints.ai_flags = 0;
+ 
+  hints.ai_family = AF_INET6;  //Type d'adresse : IPV6
+  hints.ai_socktype = SOCK_DGRAM; 
+  hints.ai_protocol = IPPROTO_UDP;  //Type de protocole : UDP
+  hints.ai_flags = 0; //Pas besoin de flags spécifiques
 
   struct addrinfo *res;
   int err;
+  //Transformation de l'adresse reçu en adresse IPV6 utilisable	
   err= getaddrinfo(address, NULL, &hints, &res);
   if(err != 0)
     return gai_strerror(err);
+  //Cast en sockaddr IPV6
   struct sockaddr_in6 * resu = (struct sockaddr_in6 *)(res->ai_addr);
   *rval = *resu;
+  //On a plus besoin de res
   freeaddrinfo(res);
   return NULL;
 }
@@ -53,20 +57,22 @@ int create_socket(struct sockaddr_in6 *source_addr,
                  int dst_port){
     int sockfd;
     int err;
+	//Création du socket en UPV6, UDP, SOCK_DGRAM
       sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
       if(sockfd == -1){
         perror("erreur lors la création du socket : ");
         return -1;
       }
-    if(source_addr != NULL && src_port >0){
+	//On bind l'adresse de source si il y en a une
+    if(source_addr != NULL && src_port >0){ 
       source_addr->sin6_port = htons(src_port);
-
       err = bind(sockfd,(struct sockaddr *)source_addr, sizeof(struct sockaddr_in6));
       if(err != 0){
         perror("erreur de liaison du socket1 : ");
         return -1;
       }
     }
+	//On se connecte à l'adresse de destination si il y en a une
     if(dest_addr != NULL && dst_port >0){
       dest_addr->sin6_port = htons(dst_port);
       err = connect(sockfd,(struct sockaddr *)dest_addr, sizeof(struct sockaddr_in6));
@@ -91,11 +97,13 @@ int wait_for_client(int sfd){
   memset(&their_addr, 0, sin_size);
   char buf[1024];
   int err;
+  //On attend la réception de message pour connaitre l'auteur du message	
   err = recvfrom(sfd, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&their_addr, &sin_size);
   if(err == -1){
     perror("erreur lors de la reception du message : ");
     return -1;
   }
+  //Connection du socket avec l'adresse source du message recue
   err = connect(sfd, (struct sockaddr *)&their_addr, sin_size);
   if(err == -1){
     perror("erreur lors de la connextion : ");
