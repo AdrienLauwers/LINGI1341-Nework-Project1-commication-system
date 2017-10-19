@@ -5,7 +5,7 @@
 #include <zlib.h>
 #include <arpa/inet.h>
 #include <stdint.h>
-#include <time.h>
+#include <sys/time.h>
 /* Extra #includes */
 /* Your code will be inserted here */
 
@@ -70,13 +70,11 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	verif_status = pkt_set_type(pkt, hd >> 6); //On ne veut que les deux bits de poids lourd ici Ex : si uint8_t est 11001010 alors on obtiendra 00000011 pour le type
 	if(verif_status != PKT_OK)
 		return verif_status;
-
-	printf("TR = %d\n", (hd&63) >>5);
 	//set du TR à 0 avant recalcul de CRC1 / 3eme bit du premier octet
 	//COMMENTAIRE DU DESSOUS MAUVAIS NON ??
 	//verif_status = pkt_set_tr(pkt, 0);
 	verif_status = pkt_set_tr(pkt, (hd&63) >>5);
-	
+
 	if(verif_status != PKT_OK)
 		return verif_status;
 
@@ -89,7 +87,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	verif_status = pkt_set_seqnum(pkt, data[1]);
 	if(verif_status != PKT_OK)
 		return verif_status;
-	
+
 	//Décodage de Length / Length est en network byte-order et il faut donc la convertir en host byte-order avec noths()
 	uint16_t pkt_length = ntohs(*((uint16_t *)(data + 2))); // (data+2) = Les 2bytes après les 2premiers bytes
 	verif_status = pkt_set_length(pkt, pkt_length);
@@ -99,9 +97,8 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	OK POUR LE HEADER, ON PASSE AU CRC/PAYLOAD
 	******************************************/
 
-
 	//Décodage du timestamp
-	verif_status = pkt_set_timestamp(pkt, *(data + 4));
+	verif_status = pkt_set_timestamp(pkt, *((uint32_t*)(data+4)));
 	if(verif_status != PKT_OK)
 		return verif_status;
 
@@ -130,7 +127,6 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 		if(verif_status != PKT_OK)
 			return verif_status;
 	}
-	printf("1 VERIF STATUS : %d\n",verif_status);
 	if(pkt_length > 0 && pkt_get_tr(pkt) == 0){
 		//Décodage CRC2
 		uint32_t crc2 = ntohl(*((uint32_t *)(data + 12 + pkt_length)));
@@ -154,6 +150,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
+	struct timeval tv;
 	size_t length = pkt_get_length(pkt);
     size_t length_tot = pkt_get_length(pkt);
 	if(pkt_get_tr(pkt)==0 && length > 0)
@@ -177,11 +174,13 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	for(i = 1 ; i<4 ; i++){
 		buf[i] = pack[i];
 	}
-	time_t timestamp = time(NULL);
-	pkt_status_code verif_status = pkt_set_timestamp((pkt_t*)pkt, (uint32_t)timestamp);
+	gettimeofday(&tv, NULL);
+	uint32_t time_send = (uint32_t) (tv.tv_sec * 1000000 + tv.tv_usec);
+	printf("\n time : %u", time_send);
+	pkt_status_code verif_status = pkt_set_timestamp((pkt_t*)pkt, time_send);
 	if(verif_status != PKT_OK)
 		return E_UNCONSISTENT;
-	buf[4] = pkt_get_timestamp(pkt);
+	*((uint32_t*)(buf+4)) = pkt_get_timestamp(pkt);
 
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
 	crc1 = crc32(crc1,(const Bytef *) buf, 8);
@@ -204,8 +203,8 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 
     *len = length_tot + 12;
 		pkt_print((pkt_t *)pkt);
-	
-	
+
+
 	return PKT_OK;
 }
 
