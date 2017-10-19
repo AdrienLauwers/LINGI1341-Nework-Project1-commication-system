@@ -153,6 +153,7 @@ void receive_data(char* hostname, int port, char* file){
 							}
 							else
 							{
+								printf("HEUU\n");
 								printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
 							}
 						}
