@@ -69,8 +69,12 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	if(verif_status != PKT_OK)
 		return verif_status;
 
+	printf("TR = %d\n", (hd&63) >>5);
 	//set du TR à 0 avant recalcul de CRC1 / 3eme bit du premier octet
-	verif_status = pkt_set_tr(pkt, 0);
+	//COMMENTAIRE DU DESSOUS MAUVAIS NON ??
+	//verif_status = pkt_set_tr(pkt, 0);
+	verif_status = pkt_set_tr(pkt, (hd&63) >>5);
+	
 	if(verif_status != PKT_OK)
 		return verif_status;
 
@@ -83,6 +87,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	verif_status = pkt_set_seqnum(pkt, data[1]);
 	if(verif_status != PKT_OK)
 		return verif_status;
+	
 	//Décodage de Length / Length est en network byte-order et il faut donc la convertir en host byte-order avec noths()
 	uint16_t pkt_length = ntohs(*((uint16_t *)(data + 2))); // (data+2) = Les 2bytes après les 2premiers bytes
 	verif_status = pkt_set_length(pkt, pkt_length);
@@ -123,7 +128,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 		if(verif_status != PKT_OK)
 			return verif_status;
 	}
-
+	printf("1 VERIF STATUS : %d\n",verif_status);
 	if(pkt_length > 0 && pkt_get_tr(pkt) == 0){
 		//Décodage CRC2
 		uint32_t crc2 = ntohl(*((uint32_t *)(data + 12 + pkt_length)));
@@ -141,6 +146,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	}
 
 	pkt_print(pkt);
+
 	return verif_status;
 }
 
@@ -191,6 +197,8 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 
     *len = length_tot + 12;
 		pkt_print((pkt_t *)pkt);
+	
+	
 	return PKT_OK;
 }
 
@@ -258,13 +266,14 @@ pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type)
 
 pkt_status_code pkt_set_tr(pkt_t *pkt, const uint8_t tr)
 {
-	if(pkt->TYPE == PTYPE_DATA){
+	//LE IF PAS BON SI ?? SI ACK OU NACK : RENVOIE E_TR...
+	//if(pkt->TYPE == PTYPE_DATA){
 		if(tr>1)
 			return E_TR;
 		pkt->TR = tr;
 		return PKT_OK;
-	}
-	return E_TR;
+	//}
+	//return E_TR;
 }
 
 pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window)
