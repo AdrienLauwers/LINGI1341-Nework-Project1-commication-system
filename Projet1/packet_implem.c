@@ -57,7 +57,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 		return E_UNCONSISTENT;
 	
 	//trop petit pour contenir le header
-	if(len < 8) /
+	if(len < 8) 
 		return E_NOHEADER;
 
 

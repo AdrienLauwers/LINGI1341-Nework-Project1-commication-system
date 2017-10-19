@@ -56,6 +56,7 @@ void send_data(char *hostname, int port, char* file){
   	tv.tv_sec = 5; //On met 5 seconde d'intervalle
   	tv.tv_usec = 0;
 
+
 	char buffer_read[MAX_PAYLOAD_SIZE]; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
 	fd_set read_set;
