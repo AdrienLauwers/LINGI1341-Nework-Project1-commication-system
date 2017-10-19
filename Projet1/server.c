@@ -100,7 +100,7 @@ void receive_data(char* hostname, int port, char* file){
 						//int seqnum = pkt_get_seqnum(pkt_rcv);
 					//CAS OU ON RECOIS SEULEMENT UN HEADER
 
-						write(sfd, "pkt_ack", 1024);
+						write(sfd, (void*)pkt_rcv, 1024);
 						int err = 0;
 						if (err !=0){
 							pkt_del(pkt_rcv);
