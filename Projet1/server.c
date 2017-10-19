@@ -56,7 +56,7 @@ void receive_data(char* hostname, int port, char* file){
 	char *buffer_payload[MAX_WINDOW_SIZE]; 
   	size_t buffer_len[MAX_WINDOW_SIZE]; 
 	int seq_exp = 0;
-	
+	memset(buffer_len,-1,MAX_WINDOW_SIZE);	
 	char packet_encoded[1024];
 	fd_set read_set;
 	while(endFile == 0){
@@ -97,55 +97,36 @@ void receive_data(char* hostname, int port, char* file){
 	   		}
 			else if(length > 0){
 				if(pkt_decode((const char*)packet_encoded,(size_t)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
-				{
+				{					
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
+						printf("[[[SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window); 
 						//On écrit le buffer et on le vide si le packet attendu a bien été reçu
-						while (buffer_payload[index] != NULL){
+						while (buffer_len[index] != -1){
 							if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
 							{
-								fprintf(stderr,"ERROR SENDING PACKET");
+								fprintf(stderr,"ERROR WRITING PACKET");
 							}
 							buffer_payload[index] = (char *)NULL;
-							buffer_len[index] = (size_t)NULL;
+							buffer_len[index] = -1;
 							//On passe à l'index suivant (l'index ne peut jamais dépasser la window size).
 							index = (index+1)%window;
 							//Le numéro de séquence attendu est incrémenté
 							seq_exp = (seq_exp+1)%256; 
 						}
-						
-          				if(write(fd, (void *)pkt_get_payload(pkt_rcv), pkt_get_length(pkt_rcv)) < 0)
-						{
-							fprintf(stderr,"ERROR SENDING PACKET");
-						}
-						
+
 						//CAS OU ON RECOIS SEULEMENT UN HEADER
 					
 						
-
-						if(write(sfd, "pkt_ack", 1024 < 0))
+					 	if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK) < 0)
 						{
-							fprintf(stderr,"ERROR SENDING PACKET");
-						}
-						int err = 0;
-						if (err !=0){
-							pkt_del(pkt_rcv);
-							pkt_del(pkt_ack);
-
-							//Pas sur du return..
-							//return;
+							fprintf(stderr,"Error sending ack");
 						}
 						else
 						{
-
+							printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
 						}
-
-
-						//send_ack(pkt_ack, seqnum, sfd,PTYPE_NACK);
-						//Pas de check d'erreur de message car peut etre seqnum corrompu ?
-						//Du coup, méthode env_ack bonne ?
-
-
+						
 				}
 			}
 		}
@@ -215,8 +196,11 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
     perror("Encodage de l'acknowledge");
     return -1;
   }
-  send(sfd, buf, buf_len, 0);
-
-  printf("Test 1 SDQFQ\n");
+  if(write(sfd, buf, buf_len) < 0)
+  {
+	  perror("Encodage write ack");
+	  return -1;
+  }
+	  
   return 0;
 }

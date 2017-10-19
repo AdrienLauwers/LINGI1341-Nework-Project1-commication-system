@@ -96,14 +96,17 @@ void send_data(char *hostname, int port, char* file){
 					pkt_del(pkt_ack);
       				return;
 				}
+				else
+				{
+					printf("SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
+				}
 			}
 		}
 		else if( FD_ISSET(sfd, &read_set)){ //on a reçut un aquittement ou un nack
-			printf("ALOOOO\n");
 			int length = read(sfd, (void *)packet_encoded, 1024);
 			printf("%s\n", packet_encoded);
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
-				fprintf(stdout,"BIEN RECU\n");
+				fprintf(stdout,"[[[ ACK NUM %d RECIEVED ]]]\n",pkt_get_seqnum(pkt_ack));
 			}
 		}
 		//TEMPORAIREMENT POUR ENVOYER QU'UN PACKET
