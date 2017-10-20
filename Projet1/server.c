@@ -18,7 +18,7 @@
 
 void receive_data(char* hostname, int port, char* file){
 
-	
+
 	struct sockaddr_in6 real_addr;
 	memset(&real_addr, 0, sizeof(real_addr));
 	//Récupération  la real address en IPV6
@@ -82,15 +82,15 @@ void receive_data(char* hostname, int port, char* file){
 		FD_SET(sfd, &read_set);
 		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
-		//On considère que la variable peut être modifiée après l'appel de la fonction, 
+		//On considère que la variable peut être modifiée après l'appel de la fonction,
 		//on utilise donc une autre structure.
 		struct timeval newtv = tv;
-		
+
 		//Permet de gerer plusieurs entrées et sorties à la fois
 		select(max_length, &read_set,NULL, NULL, &newtv);
 
 		//Cas ou on a reçu un packet
-		if(FD_ISSET(sfd, &read_set )) { 
+		if(FD_ISSET(sfd, &read_set )) {
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -111,12 +111,12 @@ void receive_data(char* hostname, int port, char* file){
 				//Décodage du packet(on a besoin que de packet contenant de la data)
 				if(pkt_decode((const char*)packet_encoded,(int)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
-						
+
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						//Si tr == 1 => on envoie un NACK
 						if(pkt_get_tr(pkt_rcv) == 1){
-							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK) < 0)
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv)) < 0)
 							{
 								fprintf(stderr,"Error sending nack");
 							}
@@ -126,7 +126,7 @@ void receive_data(char* hostname, int port, char* file){
 							}
 						}
 						else{
-							//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu 
+							//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu
 							//un packet avec un numéro de segment supérieur au numéro de segment attendu
 							add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
 							//Ecriture de buffer et on le vide si le packet avec le bon numéro de segment attendu
@@ -147,7 +147,7 @@ void receive_data(char* hostname, int port, char* file){
 							}
 
 							//CAS OU ON RECOIS SEULEMENT UN HEADER
-							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK) < 0)
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv)) < 0)
 							{
 								fprintf(stderr,"Error sending ack");
 							}
@@ -194,7 +194,7 @@ void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int 
 
 
 
-int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
+int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data){
 
   pkt_status_code return_status;
   //Etablissement des valeurs du ack
@@ -203,7 +203,7 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-  
+
   //On met le type à PTYPE_ACK ou PTYPE_NACK en fonction du paramètre passé en argument
   if(ack == PTYPE_ACK)
     return_status = pkt_set_type(pkt_ack, PTYPE_ACK);
@@ -213,6 +213,7 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
+	return_status = pkt_set_timestamp(pkt_ack, time_data);
 
   //Les ack/nack n'ont pas de payload
   return_status = pkt_set_payload(pkt_ack, NULL, 0);
@@ -220,7 +221,7 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-  
+
   char buf[12];
   size_t buf_len = 12;
   //Encodage du ACK/NACK et remplissage de la variable buf
