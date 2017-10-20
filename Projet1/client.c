@@ -19,6 +19,7 @@ void adapt_ack(int *small_seq,int seq, int *small_index,int window)
 {
 					
 	 int i;
+	printf("--------------\n");
 	printf("Dans le adapt_ack\n");
 	printf("small_index: %d\n",*small_index);
 	printf("small_seq: %d\n",*small_seq);
@@ -85,7 +86,15 @@ void send_data(char *hostname, int port, char* file){
 	char buffer_read[MAX_PAYLOAD_SIZE] ; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
 	fd_set read_set;
-
+	printf("--------------\n");
+	printf("AVANT LE WHILE\n");
+	printf("actual_index : %d\n",actual_index);
+	printf("small_index: %d\n",small_index);
+	printf("small_seq: %d\n",small_seq);
+	printf("seq_exp: %d\n",seq_exp);
+	printf("isEmpty: %d\n",isEmpty);
+	printf("window: %d\n",window);
+	printf("--------------\n");
 	while(isEmpty==1 || endFile == 0)
 	{
 		
@@ -126,6 +135,7 @@ void send_data(char *hostname, int port, char* file){
 			//Si taille > 1 => ok, en peut remplir de données le packet
 			else if(length > 0){
 					printf("--------------\n");
+				printf("AVANT LE isEmpty\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
@@ -139,7 +149,15 @@ void send_data(char *hostname, int port, char* file){
 					small_seq = seq_exp;
 					isEmpty = 1;
 				}
-	
+				printf("--------------\n");
+				printf("Après le isEmpty\n");
+				printf("actual_index : %d\n",actual_index);
+				printf("small_index: %d\n",small_index);
+				printf("small_seq: %d\n",small_seq);
+				printf("seq_exp: %d\n",seq_exp);
+				printf("isEmpty: %d\n",isEmpty);
+				printf("window: %d\n",window);
+				printf("--------------\n");
 				
 				//On place, dans notre packet, les données lues dans le fichier 
 				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
@@ -172,6 +190,7 @@ void send_data(char *hostname, int port, char* file){
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
 				actual_index = (actual_index + 1)%window;
+				printf("--------------\n");
 				printf("A la fin du send packet\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
@@ -215,6 +234,7 @@ void send_data(char *hostname, int port, char* file){
 				int window1 = pkt_get_window(pkt_ack);
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 				
+				printf("--------------\n");
 				printf("Réception d'un ACK\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
@@ -229,6 +249,7 @@ void send_data(char *hostname, int port, char* file){
 					window = window1;
 					actual_index ++;
 				}
+				printf("--------------\n");
 				printf("Après le if window\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
@@ -241,6 +262,7 @@ void send_data(char *hostname, int port, char* file){
 				
 				if(pkt_get_type(pkt_ack)==PTYPE_ACK){
 			 		 adapt_ack(&small_seq, seq, &small_index,window);
+					printf("--------------\n");
 					printf("Après le adapt_ack\n");
 					printf("actual_index : %d\n",actual_index);
 					printf("small_index: %d\n",small_index);

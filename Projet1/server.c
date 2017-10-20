@@ -55,7 +55,7 @@ void receive_data(char* hostname, int port, char* file){
 	//Permet d'envoyer des ACK/NACK
 	pkt_t* pkt_ack;
 
-	int window = 4;
+	int window = 1;
 	int index = 0; //Utilisé pour gerer les indice du buffer
 	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
   	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
@@ -91,8 +91,8 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
-			printf("\nICIIIIIIIIi\n");
-			sleep(2); 
+			//printf("\nSleep\n");
+			//sleep(2); 
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
