@@ -58,6 +58,7 @@ void send_data(char *hostname, int port, char* file){
 	
 	printf("FD %d\n",fd);
 	printf("SFD %d\n",sfd);
+	max_length = (fd > sfd) ? fd+1 : sfd+1;
 	printf("max_length %d\n",max_length);
 	char buffer_read[MAX_PAYLOAD_SIZE]; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
@@ -75,9 +76,11 @@ void send_data(char *hostname, int port, char* file){
 		struct timeval newtv = tv;
 		
 		//Permet de gerer plusieurs entrées et sorties à la fois
-		select(max_length + 1, &read_set,NULL, NULL, &newtv);
+		select(max_length, &read_set,NULL, NULL, &newtv);
 		
 		if(FD_ISSET(fd, &read_set)) {
+			
+			
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
 			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
@@ -122,9 +125,12 @@ void send_data(char *hostname, int port, char* file){
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
 			}
+			//close(sfd);
+			//fd = STDIN_FILENO;
+		
 		}
 		//Cas ou on a reçu un ACK/NACK
-		else if( FD_ISSET(sfd, &read_set)){ 
+		if( FD_ISSET(sfd, &read_set)){ 
 			//Lecture du packet encodé recu et le place dans la variable packet_encoded
 			int length = read(sfd, (void *)packet_encoded, 1024);
 			//Decodage du  packet reçu dans pkt_ack
