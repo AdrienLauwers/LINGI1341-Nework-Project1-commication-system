@@ -15,6 +15,16 @@
 #include <netdb.h>
 #include <math.h>
 
+void adapt_ack(int *small_seq,int seq, int *small_index,int window)
+{
+					
+	 int i;
+	 for(i=0; *small_seq != seq; i++){
+	    *small_index = (*small_index+1)%window; //seq est le prochain element attendu
+	   	*small_seq = (*small_seq+1)%256;
+	 }
+}
+
 void send_data(char *hostname, int port, char* file){
 	struct sockaddr_in6 real_addr;
 	memset(&real_addr, 0, sizeof(real_addr));
@@ -56,18 +66,32 @@ void send_data(char *hostname, int port, char* file){
   	tv.tv_sec = 5; //On met 5 seconde d'intervalle
   	tv.tv_usec = 0;
 	
+	int actual_index = 0; //index actuel du buffer1
+  	int small_index = 0; //index du plus petit element dans le buffer1
+  	int small_seq = 0; // valeur du segment le plus petit dans le buffer
+ 	int isEmpty = 0; //indique si le buffer est vide (0, 1 sinon)
+  	int seq_exp = 0; //prochain numero de sequence a envoyer
+  	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
+	memset(buffer_len,-1,MAX_WINDOW_SIZE);
+	int window = 1;
+	
 	printf("FD %d\n",fd);
 	printf("SFD %d\n",sfd);
 	max_length = (fd > sfd) ? fd+1 : sfd+1;
 	printf("max_length %d\n",max_length);
-	char buffer_read[MAX_PAYLOAD_SIZE]; //Buffer utilisé pour stocker le payload
+	char buffer_read[MAX_PAYLOAD_SIZE] ; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
 	fd_set read_set;
-	while(endFile == 0)
+	while(isEmpty==1 || endFile == 0)
 	{
+		
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
-		FD_SET(fd, &read_set);
+		if(endFile == 0 && (isEmpty == 0 || actual_index!=small_index) ) {
+			FD_SET(fd, &read_set);//prepare le premier flux (fichier) inutile si on est deja arrives a la fin ou si le buffer est rempli
+       	}
+		
 		
 		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
@@ -84,7 +108,7 @@ void send_data(char *hostname, int port, char* file){
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
 			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
-
+			
 			//SI TAILLE 0 => Fin de fichier
 			if(length == 0){
 				
@@ -100,11 +124,22 @@ void send_data(char *hostname, int port, char* file){
 			//Si taille > 1 => ok, en peut remplir de données le packet
 			else if(length > 0){
 				
-				//pkt_set_tr(pkt_send,0);
+				if(isEmpty == 0) {
+					small_index = actual_index;
+					small_seq = seq_exp;
+					isEmpty = 1;
+				}
+				
 				//On place, dans notre packet, les données lues dans le fichier 
 				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
+				
+				pkt_set_seqnum(pkt_send,seq_exp);
+				seq_exp = (seq_exp + 1)%256;
+				
+				
+				printf("\nTEST\n");
 				//On encode le packet pour l'envoyer après
-				if(pkt_encode(pkt_send,packet_encoded,(size_t *)&length)!= PKT_OK)
+				if(pkt_encode(pkt_send,buffer_packet[actual_index],(size_t *)&buffer_len[actual_index])!= PKT_OK)
 				{
 					//Si le message de retour est différent de PKT_OK => Il y a eu un probème
 					fprintf(stderr, "An occur failed while creating a data packet.");
@@ -112,8 +147,9 @@ void send_data(char *hostname, int port, char* file){
 					pkt_del(pkt_ack);
       				return;
 				}
+				printf("\nPASSE PAS ICI\n");
 				//Envoiela packet au reciever
-				if(write(sfd, packet_encoded,length) < 0)
+				if(write(sfd,buffer_packet[actual_index],buffer_len[actual_index]) < 0)
 				{
 					fprintf(stderr, "An occur failed while sending a packet.");
 					pkt_del(pkt_send);
@@ -124,6 +160,7 @@ void send_data(char *hostname, int port, char* file){
 				{
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
+				actual_index = (actual_index + 1)%window;
 			}
 			//close(sfd);
 			//fd = STDIN_FILENO;
@@ -136,6 +173,21 @@ void send_data(char *hostname, int port, char* file){
 			//Decodage du  packet reçu dans pkt_ack
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
 				fprintf(stdout,"[[[ ERROR RECIEVING ACK NUM %d ]]]\n",pkt_get_seqnum(pkt_ack));
+				int window1 = pkt_get_window(pkt_ack);
+				uint8_t seq = pkt_get_seqnum(pkt_ack);
+				
+				if(window1 > window && small_index == actual_index){ //le buffer etait rempli
+					window = window1;
+					actual_index ++;
+				}
+				pkt_set_window(pkt_send, window); //changera pas si window invalide
+				
+				if(pkt_get_type(pkt_ack)==PTYPE_ACK){
+			 		  adapt_ack(&small_seq, seq, &small_index,window);
+			   		if(small_index == actual_index) { 
+						isEmpty = 0;
+					}
+				}
 			}
 			else
 			{
@@ -170,3 +222,5 @@ void send_data(char *hostname, int port, char* file){
   	pkt_del(pkt_send);	*/
 	printf("%d %d\n",endFile,bufferEmpty);
 }
+
+

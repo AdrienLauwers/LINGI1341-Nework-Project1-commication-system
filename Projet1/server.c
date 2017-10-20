@@ -55,7 +55,7 @@ void receive_data(char* hostname, int port, char* file){
 	//Permet d'envoyer des ACK/NACK
 	pkt_t* pkt_ack;
 
-	int window = 3;
+	int window = 1;
 	int index = 0; //Utilisé pour gerer les indice du buffer
 	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
   	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
@@ -116,7 +116,7 @@ void receive_data(char* hostname, int port, char* file){
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						//Si tr == 1 => on envoie un NACK
 						if(pkt_get_tr(pkt_rcv) == 1){
-							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv)) < 0)
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv),window) < 0)
 							{
 								fprintf(stderr,"Error sending nack");
 							}
@@ -147,7 +147,7 @@ void receive_data(char* hostname, int port, char* file){
 							}
 
 							//CAS OU ON RECOIS SEULEMENT UN HEADER
-							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv)) < 0)
+							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
 							{
 								fprintf(stderr,"Error sending ack");
 							}
@@ -194,7 +194,7 @@ void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int 
 
 
 
-int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data){
+int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, int window){
 
   pkt_status_code return_status;
   //Etablissement des valeurs du ack
@@ -213,8 +213,15 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-	return_status = pkt_set_timestamp(pkt_ack, time_data);
-
+  return_status = pkt_set_timestamp(pkt_ack, time_data);
+  
+  
+  return_status = pkt_set_window(pkt_ack, window);
+  if(return_status != PKT_OK){
+    perror("Creation de l'acknowledge : ");
+    return -1;
+  }
+	
   //Les ack/nack n'ont pas de payload
   return_status = pkt_set_payload(pkt_ack, NULL, 0);
   if(return_status != PKT_OK){

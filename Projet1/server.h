@@ -3,6 +3,6 @@
 
 void receive_data(char* hostname, int port, char* file);
 
-int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data);
+int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, int window);
 void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int *buffer_len, pkt_t * pkt_rcv, int window);
 #endif
