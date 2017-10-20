@@ -3,5 +3,5 @@
 
 
 void send_data(char *hostname, int port, char* file);
-void adapt_ack(int *small_seq,int seq, int *small_index,int window)
+void adapt_ack(int *small_seq,int seq, int *small_index,int window);
 #endif

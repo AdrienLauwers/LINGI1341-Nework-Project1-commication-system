@@ -17,8 +17,7 @@
 int
 main (int argc, char **argv)
 {
-
-  char *fichier = NULL; 
+ char *fichier = NULL; 
   char *hostname = NULL; 
   int port;
   int c; //Permet la gestion des arguments
@@ -56,4 +55,5 @@ main (int argc, char **argv)
   //Lorsqu'on le port et l'adresse, on appelle send_data pour établir créer un socket,la connection, et envoyer les packets
   send_data(hostname, port, fichier);
   return EXIT_SUCCESS;
+	
 }

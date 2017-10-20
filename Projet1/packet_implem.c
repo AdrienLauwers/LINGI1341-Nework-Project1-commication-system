@@ -153,7 +153,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
-	printf("\nPASSE ICI 10\n");			
+	
 	struct timeval tv;
 	size_t length = pkt_get_length(pkt);
 	size_t length_tot = pkt_get_length(pkt);
@@ -177,10 +177,8 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	uint8_t window = pkt_get_window(pkt);
 	first_byte = first_byte | window;
 	
-	int j = buf == NULL;
-	printf("\nLE BUF EST NULL %d\n",j);
 	buf[0] = first_byte;
-	printf("\nPASSE PAS ICI\n");			
+		
 	size_t i;
 	char * pack = (char *) pkt;
 	for(i = 1 ; i<4 ; i++){
