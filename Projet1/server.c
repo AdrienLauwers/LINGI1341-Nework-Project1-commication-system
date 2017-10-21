@@ -92,7 +92,7 @@ void receive_data(char* hostname, int port, char* file){
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
 			//printf("\nSleep\n");
-			//sleep(2); 
+			//sleep(2);
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -216,14 +216,14 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
     return -1;
   }
   return_status = pkt_set_timestamp(pkt_ack, time_data);
-  
-  
+
+
   return_status = pkt_set_window(pkt_ack, window);
   if(return_status != PKT_OK){
     perror("Creation de l'acknowledge : ");
     return -1;
   }
-	
+
   //Les ack/nack n'ont pas de payload
   return_status = pkt_set_payload(pkt_ack, NULL, 0);
   if(return_status != PKT_OK){
@@ -231,10 +231,11 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
     return -1;
   }
 
-  char buf[12];
-  size_t buf_len = 12;
+  char buf[20];
+  size_t buf_len = 20;
   //Encodage du ACK/NACK et remplissage de la variable buf
   return_status = pkt_encode(pkt_ack, buf, &buf_len);
+	printf("\nlength of ack = %zu", buf_len);
   if(return_status != PKT_OK){
     perror("Encodage de l'acknowledge");
     return -1;
