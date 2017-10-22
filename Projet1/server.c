@@ -55,7 +55,8 @@ void receive_data(char* hostname, int port, char* file){
 	//Permet d'envoyer des ACK/NACK
 	pkt_t* pkt_ack;
 
-	int window = 1;
+	int window = 3;
+	
 	int index = 0; //Utilisé pour gerer les indice du buffer
 	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
   	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
@@ -63,8 +64,8 @@ void receive_data(char* hostname, int port, char* file){
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	char packet_encoded[1024];
 	fd_set read_set;
-	while(endFile == 0){
-		pkt_rcv = pkt_new();
+	
+	pkt_rcv = pkt_new();
 		if(pkt_rcv == NULL){
 	     	fprintf(stderr, "An occur failed while creating a data packet.");
 			pkt_del(pkt_rcv);
@@ -77,6 +78,9 @@ void receive_data(char* hostname, int port, char* file){
 			pkt_del(pkt_rcv);
 	      return;
 	    }
+	
+	while(endFile == 0){
+		
 
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
@@ -92,11 +96,12 @@ void receive_data(char* hostname, int port, char* file){
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
 			//printf("\nSleep\n");
-			//sleep(2);
+			sleep(1);
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
+				printf("[[[ EOF RECEIVED ]]]");
 				endFile = 1;
 				//Cas ou on recoit send(sfd, (const void *)EOF, 0,0);??
 				//On envoie le dernier packet recu ?
@@ -169,7 +174,7 @@ void receive_data(char* hostname, int port, char* file){
 	close(sfd);
 	//close(fd) ??
 	pkt_del(pkt_ack);
-  pkt_del(pkt_rcv);
+  	pkt_del(pkt_rcv);
 }
 
 
