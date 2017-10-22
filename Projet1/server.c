@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <math.h>
 #include <unistd.h>
+
 void receive_data(char* hostname, int port, char* file){
 
 
