@@ -1,6 +1,6 @@
 #ifndef __CLIENT_H_
 #define __CLIENT_H_
-
+#include <sys/time.h>
 /*
  * Envoie de données lues dans un fichier ou dans le flux stdin vers un destinataire
  * La fonction :
@@ -31,7 +31,7 @@ void send_data(char *hostname, int port, char* file);
  * @tv: Le timeout actuel
  * @nbre_tv: Le nombre de calcul de rtt moyen déja réalisé
  */
-void adapt_ack(int *small_seq,int seq, int *small_index,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv);
+void adapt_ack(int *small_seq,int seq, int *small_index,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv,int *buffer_size);
 
 /*
  * Mets à jours le timeout

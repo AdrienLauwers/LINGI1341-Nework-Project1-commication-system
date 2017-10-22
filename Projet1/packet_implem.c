@@ -153,12 +153,12 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
-	
 	struct timeval tv;
 	size_t length = pkt_get_length(pkt);
 	size_t length_tot = pkt_get_length(pkt);
 	if(pkt_get_tr(pkt)==0 && length > 0)
 	length_tot += 4;
+
 	if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
 	return E_NOMEM;
 
@@ -176,7 +176,6 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	//Encodage de la window
 	uint8_t window = pkt_get_window(pkt);
 	first_byte = first_byte | window;
-	
 	buf[0] = first_byte;
 		
 	size_t i;
@@ -196,7 +195,6 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 
 	}
 	*((uint32_t*)(buf+4)) = pkt_get_timestamp(pkt);
-
 	//Calculer du CRC1
 	uint32_t crc1 = crc32(0L, Z_NULL, 0);
 	crc1 = crc32(crc1,(const Bytef *) buf, 8);
@@ -204,7 +202,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
 	pkt_set_crc1((pkt_t*)pkt, crc1);
-
+	printf("5\n");
 	/*****************************************
 	ENCODAGE DU PAYLOAD/CRC2
 	******************************************/
@@ -219,7 +217,6 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 		*((uint32_t*)(buf+length+12)) = htonl(crc2);
 		pkt_set_crc2((pkt_t*)pkt, crc2);
 	}
-
 	*len = length_tot + 12;
 	pkt_print((pkt_t *)pkt);
 

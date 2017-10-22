@@ -16,20 +16,21 @@
 #include <netdb.h>
 #include <math.h>
 
-void adapt_ack(int *small_seq,int seq, int *small_index,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv)
+void adapt_ack(int *small_seq,int seq, int *small_index,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv,int *buffer_size)
 {
 
 	 int i;
-	printf("--------------\n");
 	printf("Dans le adapt_ack\n");
 	printf("small_index: %d\n",*small_index);
 	printf("small_seq: %d\n",*small_seq);
-	printf("window: %d\n",window);
-	printf("--------------\n");
+	printf("%d",*buffer_size);
 	 for(i=0; *small_seq != seq; i++){
 		 printf("Passe dans le for\n");
 	    *small_index = (*small_index+1)%window; //seq est le prochain element attendu
+		
 	   	*small_seq = (*small_seq+1)%256;
+		 
+		 *buffer_size = (*buffer_size)- 1;
 			if(*small_seq == seq){//adapte le rtt et le temps maximal d'attente car le receiver a reçut seql
 		  	struct timeval tv1;
 				gettimeofday(&tv1, NULL);
@@ -88,42 +89,40 @@ void send_data(char *hostname, int port, char* file){
 		pkt_del(pkt_send);
       return;
     }
-	int bufferEmpty = 0;
+
 	int endFile = 0; //on regarde si fin du fichier ou non
 	int max_length = 0; //Taille maximal du file directory, utilisé pour l'appel du select
 	struct timeval tv;
   	tv.tv_sec = 5; //On met 5 seconde d'intervalle
   	tv.tv_usec = 0;
-
+	int buffer_size = 0;
 	int actual_index = 0; //index actuel du buffer1
   	int small_index = 0; //index du plus petit element dans le buffer1
   	int small_seq = 0; // valeur du segment le plus petit dans le buffer
- 	int isEmpty = 0; //indique si le buffer est vide (0, 1 sinon)
+ 	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
   	int seq_exp = 0; //prochain numero de sequence a envoyer
   	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
 	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	int window = 1;
 	int nbre_tv = 0;
-
+	
 	char buffer_read[MAX_PAYLOAD_SIZE] ; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
 	fd_set read_set;
-	printf("--------------\n");
 	printf("AVANT LE WHILE\n");
 	printf("actual_index : %d\n",actual_index);
 	printf("small_index: %d\n",small_index);
 	printf("small_seq: %d\n",small_seq);
 	printf("seq_exp: %d\n",seq_exp);
-	printf("isEmpty: %d\n",isEmpty);
-	printf("window: %d\n",window);
-	printf("--------------\n");
-	while(isEmpty==1 || endFile == 0)
+	printf("buffer_empty: %d\n",buffer_empty);
+	printf("buffer_size: %d\n",buffer_size);
+	while(buffer_empty==1 || endFile == 0)
 	{
 
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
-		if(endFile == 0 && (isEmpty == 0 || actual_index!=small_index) ) {
+		if(endFile == 0 && (buffer_empty == 0 || actual_index!=small_index) ) {
 			FD_SET(fd, &read_set);//prepare le premier flux (fichier) inutile si on est deja arrives a la fin ou si le buffer est rempli
        	}
 
@@ -157,31 +156,26 @@ void send_data(char *hostname, int port, char* file){
 	   		}
 			//Si taille > 1 => ok, en peut remplir de données le packet
 			else if(length > 0){
-					printf("--------------\n");
-				printf("AVANT LE isEmpty\n");
+				printf("AVANT LE buffer_empty\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
 				printf("seq_exp: %d\n",seq_exp);
-				printf("isEmpty: %d\n",isEmpty);
-				printf("window: %d\n",window);
-				printf("--------------\n");
-				if(isEmpty == 0) {
+				printf("buffer_empty: %d\n",buffer_empty);
+				printf("buffer_size: %d\n",buffer_size);
+				if(buffer_empty == 0) {
 					printf("PASSE DANS LE IS EMPTY\n");
 					small_index = actual_index;
 					small_seq = seq_exp;
-					isEmpty = 1;
+					buffer_empty = 1;
 				}
-				printf("--------------\n");
-				printf("Après le isEmpty\n");
+				printf("Après le buffer_empty\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
 				printf("seq_exp: %d\n",seq_exp);
-				printf("isEmpty: %d\n",isEmpty);
-				printf("window: %d\n",window);
-				printf("--------------\n");
-
+				printf("buffer_empty: %d\n",buffer_empty);
+				printf("buffer_size: %d\n",buffer_size);
 				//On place, dans notre packet, les données lues dans le fichier
 				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
 
@@ -190,11 +184,13 @@ void send_data(char *hostname, int port, char* file){
 
 
 				buffer_packet[actual_index] = malloc (pkt_get_length(pkt_send));
+				buffer_len[actual_index] = 1024;
+				buffer_size++;
 				//On encode le packet pour l'envoyer après
 				if(pkt_encode(pkt_send,buffer_packet[actual_index],(size_t *)&buffer_len[actual_index])!= PKT_OK)
 				{
 					//Si le message de retour est différent de PKT_OK => Il y a eu un probème
-					fprintf(stderr, "pkt_encode : An occur failed while creating a data packet.\n");
+					fprintf(stderr, "pkt_encode ici : An occur failed while creating a data packet.\n");
 					pkt_del(pkt_send);
 					pkt_del(pkt_ack);
       				return;
@@ -213,15 +209,13 @@ void send_data(char *hostname, int port, char* file){
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
 				actual_index = (actual_index + 1)%window;
-				printf("--------------\n");
 				printf("A la fin du send packet\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
 				printf("seq_exp: %d\n",seq_exp);
-				printf("isEmpty: %d\n",isEmpty);
-				printf("window: %d\n",window);
-				printf("--------------\n");
+				printf("buffer_empty: %d\n",buffer_empty);
+				printf("buffer_size: %d\n",buffer_size);
 			}
 			//close(sfd);
 			//fd = STDIN_FILENO;
@@ -234,7 +228,6 @@ void send_data(char *hostname, int port, char* file){
 			//Decodage du  packet reçu dans pkt_ack
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
 				fprintf(stdout,"[[[ ERROR RECIEVING ACK NUM %d ]]]\n",pkt_get_seqnum(pkt_ack));
-
 			}
 			else
 			{
@@ -257,59 +250,55 @@ void send_data(char *hostname, int port, char* file){
 				int window1 = pkt_get_window(pkt_ack);
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 
-				printf("--------------\n");
 				printf("Réception d'un ACK\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
 				printf("seq_exp: %d\n",seq_exp);
-				printf("isEmpty: %d\n",isEmpty);
-				printf("window: %d\n",window);
-				printf("--------------\n");
-
+				printf("buffer_empty: %d\n",buffer_empty);
+				printf("buffer_size: %d\n",buffer_size);
 				if(window1 > window && small_index == actual_index){ //le buffer etait rempli
 					printf("Passe dans le if window\n");
 					window = window1;
 					actual_index ++;
 				}
-				printf("--------------\n");
 				printf("Après le if window\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
 				printf("seq_exp: %d\n",seq_exp);
-				printf("isEmpty: %d\n",isEmpty);
-				printf("window: %d\n",window);
-				printf("--------------\n");
+				printf("buffer_empty: %d\n",buffer_empty);
+				printf("buffer_size: %d\n",buffer_size);
 				pkt_set_window(pkt_send, window); //changera pas si window invalide
 
 				if(pkt_get_type(pkt_ack)==PTYPE_ACK){
-			 		 adapt_ack(&small_seq, seq, &small_index,window, pkt_get_timestamp(pkt_ack), tv, nbre_tv);
-					printf("--------------\n");
+
+			 		 adapt_ack(&small_seq, seq, &small_index,window, pkt_get_timestamp(pkt_ack), tv, nbre_tv,&buffer_size);
 					printf("Après le adapt_ack\n");
 					printf("actual_index : %d\n",actual_index);
 					printf("small_index: %d\n",small_index);
 					printf("small_seq: %d\n",small_seq);
 					printf("seq_exp: %d\n",seq_exp);
-					printf("isEmpty: %d\n",isEmpty);
-					printf("window: %d\n",window);
-					printf("--------------\n");
+					printf("buffer_empty: %d\n",buffer_empty);
+					printf("buffer_size: %d\n",buffer_size);
 					if(small_index == actual_index) {
-						printf("SMALL_INDEX == ACTUAL_INDEX -> isEmpty = 0\n");
-						isEmpty = 0;
+						printf("SMALL_INDEX == ACTUAL_INDEX -> buffer_empty = 0\n");
+						buffer_empty = 0;
 					}
 				}
 			}
 		}
-
-		endFile = feof(stdin);
 	}
-
-	/*
-	send(sfd, (const void *)EOF, 0,0);
+	printf("\nPASSE ICI\n");
+	if(write(sfd, (const void *)EOF, 0) < 0)
+	{
+		fprintf(stderr, "send EOF : An occur failed while sending EOF.\n");
+		pkt_del(pkt_send);
+		pkt_del(pkt_ack);
+		return;
+	}
 	close(sfd);
 	//close(fd) ??
 	pkt_del(pkt_ack);
-  	pkt_del(pkt_send);	*/
-	printf("%d %d\n",endFile,bufferEmpty);
+  	pkt_del(pkt_send);
 }
