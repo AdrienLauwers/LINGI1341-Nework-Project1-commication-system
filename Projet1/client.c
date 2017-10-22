@@ -21,21 +21,20 @@ void adapt_ack(int *small_seq,int seq, int *small_index,int window, uint32_t tim
 
 	 int i;
 	printf("Dans le adapt_ack\n");
-	printf("small_index: %d\n",*small_index);
+	printf("seq: %d\n",seq);
 	printf("small_seq: %d\n",*small_seq);
 	printf("%d",*buffer_size);
 	 for(i=0; *small_seq != seq; i++){
-		 printf("Passe dans le for\n");
-	    *small_index = (*small_index+1)%window; //seq est le prochain element attendu
 		
+	    *small_index = (*small_index+1)%window; //seq est le prochain element attendu
 	   	*small_seq = (*small_seq+1)%256;
-		 
 		 *buffer_size = (*buffer_size)- 1;
-			if(*small_seq == seq){//adapte le rtt et le temps maximal d'attente car le receiver a reçut seql
-		  	struct timeval tv1;
-				gettimeofday(&tv1, NULL);
-				adapt_rtt(tv1, timestamp, &tv, nbre_tv);
-			 }
+		if(*small_seq == seq){//adapte le rtt et le temps maximal d'attente car le receiver a reçut seql
+		struct timeval tv1;
+			gettimeofday(&tv1, NULL);
+			adapt_rtt(tv1, timestamp, &tv, nbre_tv);
+		 }
+	// printf("small_seq: %d\n",*small_seq);
 	 }
 }
 
@@ -138,6 +137,7 @@ void send_data(char *hostname, int port, char* file){
 
 		if(FD_ISSET(fd, &read_set)) {
 
+		
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
 			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
@@ -163,7 +163,7 @@ void send_data(char *hostname, int port, char* file){
 				printf("seq_exp: %d\n",seq_exp);
 				printf("buffer_empty: %d\n",buffer_empty);
 				printf("buffer_size: %d\n",buffer_size);
-				if(buffer_empty == 0) {
+				if(buffer_empty == 0){
 					printf("PASSE DANS LE IS EMPTY\n");
 					small_index = actual_index;
 					small_seq = seq_exp;
@@ -251,6 +251,7 @@ void send_data(char *hostname, int port, char* file){
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 
 				printf("Réception d'un ACK\n");
+				printf("Réception d'un ACK\n");
 				printf("actual_index : %d\n",actual_index);
 				printf("small_index: %d\n",small_index);
 				printf("small_seq: %d\n",small_seq);
@@ -261,6 +262,7 @@ void send_data(char *hostname, int port, char* file){
 					printf("Passe dans le if window\n");
 					window = window1;
 					actual_index ++;
+				
 				}
 				printf("Après le if window\n");
 				printf("actual_index : %d\n",actual_index);
@@ -281,16 +283,15 @@ void send_data(char *hostname, int port, char* file){
 					printf("seq_exp: %d\n",seq_exp);
 					printf("buffer_empty: %d\n",buffer_empty);
 					printf("buffer_size: %d\n",buffer_size);
-					if(small_index == actual_index) {
-						printf("SMALL_INDEX == ACTUAL_INDEX -> buffer_empty = 0\n");
+					if(endFile == 1 && small_seq == (seq_exp - 1)) {
 						buffer_empty = 0;
 					}
+					
 				}
 			}
 		}
 	}
-	printf("\nPASSE ICI\n");
-	if(write(sfd, (const void *)EOF, 0) < 0)
+	if(send(sfd, (const void *)EOF, 0,0) < 0)
 	{
 		fprintf(stderr, "send EOF : An occur failed while sending EOF.\n");
 		pkt_del(pkt_send);
@@ -298,7 +299,7 @@ void send_data(char *hostname, int port, char* file){
 		return;
 	}
 	close(sfd);
-	//close(fd) ??
+	close(fd);
 	pkt_del(pkt_ack);
   	pkt_del(pkt_send);
 }

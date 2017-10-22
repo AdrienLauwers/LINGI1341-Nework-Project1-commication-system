@@ -95,6 +95,7 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
+			printf("JE RECOIIIS");
 			//printf("\nSleep\n");
 			sleep(1);
 			//on lit le packet encodée recu
@@ -160,7 +161,6 @@ void receive_data(char* hostname, int port, char* file){
 							}
 							else
 							{
-								printf("HEUU\n");
 								printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
 							}
 						}
