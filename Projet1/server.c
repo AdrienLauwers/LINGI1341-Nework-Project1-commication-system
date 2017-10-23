@@ -96,8 +96,7 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
-			//printf("\nSleep\n");
-			sleep(1);
+
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -109,7 +108,6 @@ void receive_data(char* hostname, int port, char* file){
 			}
 			//Si taille < 0 => problème
 			else if(length < 0){
-				//On envoie le dernier packet recu ?
 				pkt_del(pkt_rcv);
 				pkt_del(pkt_ack);
 				return;
@@ -161,7 +159,6 @@ void receive_data(char* hostname, int port, char* file){
 							}
 							else
 							{
-								printf("HEUU\n");
 								printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
 							}
 						}
@@ -173,7 +170,7 @@ void receive_data(char* hostname, int port, char* file){
 
 
 	close(sfd);
-	//close(fd) ??
+	close(fd);
 	pkt_del(pkt_ack);
   	pkt_del(pkt_rcv);
 }
@@ -241,7 +238,6 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
   size_t buf_len = 20;
   //Encodage du ACK/NACK et remplissage de la variable buf
   return_status = pkt_encode(pkt_ack, buf, &buf_len);
-	printf("\nlength of ack = %zu", buf_len);
   if(return_status != PKT_OK){
     perror("Encodage de l'acknowledge");
     return -1;

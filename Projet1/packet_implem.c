@@ -186,7 +186,6 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	if(pkt_get_type(pkt)== PTYPE_DATA){
 		gettimeofday(&tv, NULL);
 		uint32_t time_send = (uint32_t) (tv.tv_sec * 1000000 + tv.tv_usec);
-		printf("\n time : %u", time_send);
 		//Remplissage la variable time_stamp du packet par le temps actuel(sert à calculer le RTT)
 		pkt_status_code verif_status = pkt_set_timestamp((pkt_t*)pkt, time_send);
 		if(verif_status != PKT_OK)
@@ -202,7 +201,6 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
 	pkt_set_crc1((pkt_t*)pkt, crc1);
-	printf("5\n");
 	/*****************************************
 	ENCODAGE DU PAYLOAD/CRC2
 	******************************************/
