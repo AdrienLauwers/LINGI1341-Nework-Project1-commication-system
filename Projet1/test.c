@@ -24,20 +24,7 @@ void type(void) {
 
 	pkt_del(pkt);
 }
-//3
-void tr(void) {
-	pkt_t * pkt = pkt_new();
-	pkt_status_code return_status = pkt_set_type(pkt, 2);
-	return_status = pkt_set_tr(pkt, 1);
-	CU_ASSERT_EQUAL(return_status, E_TR);
-	return_status = pkt_set_type(pkt, PTYPE_DATA);
-	CU_ASSERT_EQUAL(return_status, PKT_OK);
-	CU_ASSERT_EQUAL(pkt_get_tr(pkt), 0);
-	return_status = pkt_set_tr(pkt, 2);
-	CU_ASSERT_EQUAL(return_status, E_TR);
 
-	pkt_del(pkt);
-}
 
 //4
 void window(void) {
@@ -149,7 +136,6 @@ int main(){
 	/* Ajout à la suite */
 	if(NULL == CU_add_test(pSuite, "pkt_new", new) ||
 			NULL == CU_add_test(pSuite, "pkt_get_set_type", type) ||
-			NULL == CU_add_test(pSuite, "pkt_get_set_tr", tr)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_window", window)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_seqnum", seqnum)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_length", length)||
