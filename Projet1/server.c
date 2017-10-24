@@ -47,7 +47,7 @@ void receive_data(char* hostname, int port, char* file){
     fd = STDOUT_FILENO;
 
 	struct timeval tv;
-  tv.tv_sec = 5;
+  	tv.tv_sec = 5;
 	tv.tv_usec = 0;
 	int endFile = 0;
 	int max_length = 0;
@@ -79,7 +79,7 @@ void receive_data(char* hostname, int port, char* file){
 			pkt_del(pkt_rcv);
 	      return;
 	    }
-	
+	//int q = 0;
 	while(endFile == 0){
 		
 	
@@ -119,10 +119,13 @@ void receive_data(char* hostname, int port, char* file){
 				{
 
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
-					
+						
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
+						printf("%d",pkt_get_tr(pkt_rcv));
 						//Si tr == 1 => on envoie un NACK
+						//q++;
 						if(pkt_get_tr(pkt_rcv) == 1){
+							printf("TRUCATEEEED\n");
 							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv),window) < 0)
 							{
 								fprintf(stderr,"Error sending nack");
@@ -139,6 +142,7 @@ void receive_data(char* hostname, int port, char* file){
 							//Ecriture de buffer et on le vide si le packet avec le bon numéro de segment attendu
 							//a bien été reçu
 							while (buffer_len[index] != -1){
+								printf("Je passe ici\n");
 								//Ecriture le pyaload des packets dans le fichier
 								if(write(fd,buffer_payload[index],buffer_len[index]) < 0)
 								{
@@ -152,15 +156,23 @@ void receive_data(char* hostname, int port, char* file){
 								//Le numéro de séquence attendu est incrémenté
 								seq_exp = (seq_exp+1)%256;
 							}
-
+							int k;
+							if(seq_exp-1 == -1)
+							{
+								k = 255;
+							}
+							else
+							{
+								k = seq_exp-1;
+							}
 							//CAS OU ON RECOIS SEULEMENT UN HEADER
-							if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
+							if(send_ack(pkt_ack,seq_exp-1,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
 							{
 								fprintf(stderr,"Error sending ack");
 							}
 							else
 							{
-								printf("[[[ ACK NUM %d SENT ]]]\n",seq_exp-1);
+								printf("[[[ ACK NUM %d SENT ]]]\n",k);
 							}
 						}
 
