@@ -27,9 +27,9 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 		*fail = 1;
 	}
 	 for(i=0; *small_seq != (seq+1)%256; i++){
-		
-		 
-		
+
+
+
 	    *small_ind =  (*small_ind) + 1; //seq est le prochain element attendu
 	   	*small_seq = (*small_seq+1)%256;
 		if(*small_seq == seq){//adapte le rtt et le temps maximal d'attente car le receiver a reçut seql
@@ -103,29 +103,29 @@ void send_data(char *hostname, int port, char* file){
 	int small_ind = 0;
 	int seq_ind = 0;
  	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
-  	int seq_exp = 0; //prochain numero de sequence a envoyer
-  	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+  int seq_exp = 0; //prochain numero de sequence a envoyer
+  char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
 	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	int window = 1;
 	int nbre_tv = 0;
-	
+
 	char buffer_read[MAX_PAYLOAD_SIZE] ; //Buffer utilisé pour stocker le payload
 	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
 	fd_set read_set;
-	
+
 	int ack_received = 0;
 	int sent = 0;
 	int fail =0;
 	while(buffer_empty==1 || endFile == 0)
 	{
-		
+
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		printf("endFile : %d\n",endFile);
 		printf("small_seq: %d\n",small_seq);
 		printf("seq_exp : %d\n",seq_exp);
-	
+
 		//int isNotFull = (small_seq < seq_exp ) ? seq_exp-small_seq<window : seq_exp+256-small_seq<window;
 		int isNotFull = seq_exp-small_seq<window;
 		printf("reponse : %d\n",isNotFull);
@@ -143,7 +143,7 @@ void send_data(char *hostname, int port, char* file){
 			printf("\nBUFFER REMPLI\n");
 		}
 
-		
+
 		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
 		//On considère que la variable peut être modifiée après l'appel de la fonction,
@@ -157,7 +157,7 @@ void send_data(char *hostname, int port, char* file){
 
 		if(FD_ISSET(fd, &read_set)) {
 
-		
+
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
 			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
@@ -176,16 +176,16 @@ void send_data(char *hostname, int port, char* file){
 	   		}
 			//Si taille > 1 => ok, en peut remplir de données le packet
 			else if(length > 0){
-				
-				if(buffer_empty == 0){			
+
+				if(buffer_empty == 0){
 					buffer_empty = 1;
 				}
-				
+
 				//On place, dans notre packet, les données lues dans le fichier
 				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
 
 				pkt_set_seqnum(pkt_send,seq_exp);
-			
+
 
 
 				buffer_packet[seq_ind%window] = malloc (pkt_get_length(pkt_send));
@@ -265,25 +265,25 @@ void send_data(char *hostname, int port, char* file){
 					printf("[[[ ERROR ON SEGNUM RECIEVED ]]]\n");
 				}
 				int window1 = pkt_get_window(pkt_ack);
-				
+
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 
 				if(window1 > window){ //le buffer etait rempli
-					window = window1;			
+					window = window1;
 				}
-				
+
 
 				pkt_set_window(pkt_send, window); //changera pas si window invalide
 				ack_received = 1;
 				if(pkt_get_type(pkt_ack)==PTYPE_ACK){
 						//int w = 0;
 			 		 adapt_buffer(&small_seq, seq, &small_ind,window, pkt_get_timestamp(pkt_ack), tv, nbre_tv, &fail);
-					
+
 					if(endFile == 1 && small_ind == (seq_exp)) {
 						buffer_empty = 0;
 					}
-				
-					
+
+
 				}
 				else if(pkt_get_type(pkt_ack) == PTYPE_NACK) {
 					printf("ON RECOIt UN NACK\n");
@@ -298,11 +298,11 @@ void send_data(char *hostname, int port, char* file){
 					}
 
 				}
-			
-			
+
+
 			}
 		}
-		
+
 		if(sent !=1 && ack_received == 0)
 		{
 			if(write(sfd, buffer_packet[small_ind%window], buffer_len[small_ind%window])  < 0)
@@ -313,7 +313,7 @@ void send_data(char *hostname, int port, char* file){
       				return;
 			}
 		}
-	
+
 	}
 	if(send(sfd,"", 0,0) < 0)
 	{
