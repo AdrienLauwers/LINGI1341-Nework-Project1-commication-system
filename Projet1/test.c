@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <errno.h>
 #include <CUnit/Basic.h>
 #include "packet_interface.h"
+#include "server.h"
+#include "client.h"
 
 //static uint8_t pkt_tab[] = {0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
@@ -120,6 +125,39 @@ void encode(void) {
 
 }
 
+void send_receive(void){
+	int status;
+	pid_t pid = fork();
+	if(pid < 0)
+		exit(EXIT_FAILURE);
+
+	if(pid == 0){
+		fflush(stdout);
+		receive_data("::1", 12346, "result.txt");
+	}
+	else{
+		fflush(stdout);
+		send_data("::1", 12346, "test.txt");
+		int fils = waitpid(pid, &status, 0);
+		if(fils == -1)
+			exit(EXIT_FAILURE);
+	}
+	fflush(stdout);
+	FILE* fd1 = fopen("test.txt", "r");
+	if(fd1 == NULL) fclose(fd1);
+	FILE* fd2 = fopen("result.txt", "r");
+	if(fd2 == NULL) fclose(fd2);
+	int ch1 = getc(fd1);
+	int ch2 = getc(fd2);
+	while ((ch1 != EOF) && (ch2 != EOF) && (ch1 == ch2)) {
+         ch1 = getc(fd1);
+         ch2 = getc(fd2);
+      }
+  CU_ASSERT(ch1 == ch2);
+	fclose(fd1);
+  fclose(fd2);
+}
+
 int main(){
   CU_pSuite pSuite = NULL;
 	/* initialisation de la suite*/
@@ -141,7 +179,8 @@ int main(){
 			NULL == CU_add_test(pSuite, "pkt_get_set_length", length)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_timestamp", timestamp)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_payload", payload)||
-			NULL == CU_add_test(pSuite, "pkt_get_set_encode", encode)
+			NULL == CU_add_test(pSuite, "pkt_get_set_encode", encode)||
+			NULL == CU_add_test(pSuite, "send_receive", send_receive)
 			)
 	   {
 		CU_cleanup_registry();
