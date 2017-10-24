@@ -103,8 +103,11 @@ void send_data(char *hostname, int port, char* file){
 	int seq_ind = 0;
  	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
   	int seq_exp = 0; //prochain numero de sequence a envoyer
+	
   	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+	
 	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
+	
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	int window = 1;
 	int nbre_tv = 0;
@@ -122,7 +125,8 @@ void send_data(char *hostname, int port, char* file){
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		printf("DEBUT NOUVELLE BOUCLE\n");
-	
+		printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
+		
 		//int isNotFull = (small_seq < seq_exp ) ? seq_exp-small_seq<window : seq_exp+256-small_seq<window;
 		int isNotFull = seq_exp-small_seq<window;
 		//int k = small_seq%window;
@@ -150,7 +154,7 @@ void send_data(char *hostname, int port, char* file){
 
 			if(seq_ind%window !=0)
 			{
-				printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[seq_ind-1%window]);
+				printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 			}
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
@@ -208,6 +212,7 @@ void send_data(char *hostname, int port, char* file){
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
 				printf("INDICE : %d\nTAILLE : %d\n,",seq_ind%window,buffer_len[seq_ind%window]);
+				
 				seq_exp = (seq_exp + 1)%256;
 				seq_ind ++;
 				sent = 1;
@@ -292,9 +297,21 @@ void send_data(char *hostname, int port, char* file){
       				return;
 			}
 		}
+		
+		if(seq_ind > 2)
+		{
+			printf("DANS LE TABLEAU\n");
+			printf("INDICE : %d\n",0);
+			printf("TAILLE : %d\n",buffer_len[0]);
+			printf("INDICE : %d\n",1);
+			printf("TAILLE : %d\n",buffer_len[1]);
+			printf("INDICE : %d\n",2);
+			printf("TAILLE : %d\n",buffer_len[2]);
+		}
+		
 		printf("\n\nINDICE FIN: %d\nTAILLE : %d\n,",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 	
-	}
+	} //FIN DE LA BOUCLE
 	if(send(sfd,"", 0,0) < 0)
 	{
 		fprintf(stderr, "send EOF : An occur failed while sending EOF.\n");
