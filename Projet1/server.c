@@ -81,7 +81,7 @@ void receive_data(char* hostname, int port, char* file){
 	
 	while(endFile == 0){
 		
-
+	
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		//calcul de la taille max entre les deux file directory
@@ -95,7 +95,7 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
-
+		
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -118,6 +118,7 @@ void receive_data(char* hostname, int port, char* file){
 				{
 
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
+					
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						//Si tr == 1 => on envoie un NACK
 						if(pkt_get_tr(pkt_rcv) == 1){
