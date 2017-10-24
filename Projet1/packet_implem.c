@@ -149,6 +149,8 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 	//Crc1
 	*((uint32_t *) (buf + 8)) = htonl(crc1);
 	return_status = pkt_set_crc1((pkt_t*)pkt, crc1);
+	if(return_status != PKT_OK)
+		return E_CRC;
 	const char * payload = pkt_get_payload(pkt);
 	for(i = 0 ; i<length; i++){
 		buf[12+i] = payload[i];
