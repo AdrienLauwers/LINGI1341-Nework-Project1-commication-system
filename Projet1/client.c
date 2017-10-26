@@ -89,7 +89,7 @@ void send_data(char *hostname, int port, char* file){
 		pkt_del(pkt_send);
       return;
     }
-
+	pkt_copy(pkt_send, pkt_ack);
 	int endFile = 0; //on regarde si fin du fichier ou non
 	int max_length = 0; //Taille maximal du file directory, utilisé pour l'appel du select
 	struct timeval tv;
@@ -104,7 +104,7 @@ void send_data(char *hostname, int port, char* file){
  	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
   	int seq_exp = 0; //prochain numero de sequence a envoyer
 
-  	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+  char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
 
 	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 
@@ -185,8 +185,8 @@ void send_data(char *hostname, int port, char* file){
 				pkt_set_seqnum(pkt_send,seq_exp);
 
 
-				buffer_packet[seq_ind%window] = malloc (pkt_get_length(pkt_send));
-				buffer_len[seq_ind%window] = 1024;
+				buffer_packet[seq_ind%window] = malloc (pkt_get_length(pkt_send)+16);
+				buffer_len[seq_ind%window] = 528;
 
 
 				//On encode le packet pour l'envoyer après
@@ -269,6 +269,7 @@ void send_data(char *hostname, int port, char* file){
 				else if(pkt_get_type(pkt_ack) == PTYPE_NACK) {
 					printf("ON RECOIt UN NACK\n");
 					int index = seq%window;
+					printf("\nDFQSDGSDGQFG : %s \n", buffer_packet[index]);
 					//printf("Ce qu'on veut renvoyer : %d",index);
 					if(write(sfd,buffer_packet[index],buffer_len[index]) < 0)
 					{

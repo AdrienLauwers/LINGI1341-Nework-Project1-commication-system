@@ -298,3 +298,7 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 	}
 	return return_status;
 }
+
+void pkt_copy(pkt_t * dest, pkt_t* source){
+	*dest = *source;
+}
