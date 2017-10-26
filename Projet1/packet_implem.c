@@ -139,11 +139,12 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
   pkt_status_code return_status;
 	size_t length = pkt_get_length(pkt);
     size_t length_tot = pkt_get_length(pkt);
+	
 	if(pkt_get_tr(pkt)==0 && length > 0)
 		length_tot += 4;
-	if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
-		return E_NOMEM;
-
+	/*if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
+		return E_NOMEM;*/
+	
 	memcpy(buf, (void*)pkt, 8);
 	size_t i;
 
