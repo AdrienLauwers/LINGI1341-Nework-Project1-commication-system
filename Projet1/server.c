@@ -96,7 +96,7 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
-
+			printf("TEST\n");
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -114,10 +114,11 @@ void receive_data(char* hostname, int port, char* file){
 	   		}
 			//Si taille > 0 , packet recu valide
 			else if(length > 0){
+				
 				//Décodage du packet(on a besoin que de packet contenant de la data)
 				if(pkt_decode((const char*)packet_encoded,(int)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
-
+						
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
 
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
@@ -177,6 +178,9 @@ void receive_data(char* hostname, int port, char* file){
 						}
 
 				}
+				
+					
+				
 			}
 		}
 	}

@@ -121,6 +121,7 @@ pkt_status_code pkt_set_payload(pkt_t*,
  */
 pkt_status_code pkt_set_crc2(pkt_t*, const uint32_t crc2);
 
+void pkt_copy(pkt_t* source,pkt_t* dest);
 void pkt_print(pkt_t *);
 
 void pkt_copy(pkt_t *, pkt_t*);
