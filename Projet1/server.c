@@ -17,6 +17,7 @@
 #include <math.h>
 #include <unistd.h>
 
+
 void receive_data(char* hostname, int port, char* file){
 
 
@@ -101,20 +102,21 @@ void receive_data(char* hostname, int port, char* file){
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
-				printf("[[[ EOF RECEIVED ]]]");
+				printf("[[[ EOF RECEIVED ]]]\n");
 				endFile = 1;
 				//Cas ou on recoit send(sfd, (const void *)EOF, 0,0);??
 				//On envoie le dernier packet recu ?
 			}
 			//Si taille < 0 => problème
 			else if(length < 0){
+				printf("LENGTH NEG\n");
 				pkt_del(pkt_rcv);
 				pkt_del(pkt_ack);
 				return;
 	   		}
 			//Si taille > 0 , packet recu valide
 			else if(length > 0){
-				
+				printf("LENGTH OK\n");
 				//Décodage du packet(on a besoin que de packet contenant de la data)
 				if(pkt_decode((const char*)packet_encoded,(int)length,pkt_rcv) == PKT_OK && pkt_get_type(pkt_rcv) == PTYPE_DATA)
 				{
@@ -177,6 +179,10 @@ void receive_data(char* hostname, int port, char* file){
 							}
 						}
 
+				}
+				else
+				{
+					printf("NACKNACK\n");
 				}
 				
 					

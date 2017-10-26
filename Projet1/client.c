@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <math.h>
 
+
 void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv,int *fail)
 {
 	printf("%d",window);
