@@ -42,12 +42,12 @@ void receive_data(char* hostname, int port, char* file){
 	int fd;
 	//Ouvrage du fichier si l'utilisateur en a fournit hein
   if(file != NULL)
-    fd = open((const char *)file, O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR );
+    fd = open((const char *)file, O_WRONLY | O_CREAT | O_TRUNC , S_IRWXU);
   else
     fd = STDOUT_FILENO;
 
 	struct timeval tv;
-  	tv.tv_sec = 5;
+  tv.tv_sec = 5;
 	tv.tv_usec = 0;
 	int endFile = 0;
 	int max_length = 0;
@@ -57,7 +57,7 @@ void receive_data(char* hostname, int port, char* file){
 	pkt_t* pkt_ack;
 
 	int window = 3;
-	
+
 	int index = 0; //Utilisé pour gerer les indice du buffer
 	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
   	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
@@ -65,7 +65,7 @@ void receive_data(char* hostname, int port, char* file){
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	char packet_encoded[1024];
 	fd_set read_set;
-	
+
 	pkt_rcv = pkt_new();
 		if(pkt_rcv == NULL){
 	     	fprintf(stderr, "An occur failed while creating a data packet.");
@@ -81,8 +81,8 @@ void receive_data(char* hostname, int port, char* file){
 	    }
 	//int q = 0;
 	while(endFile == 0){
-		
-	
+
+
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		//calcul de la taille max entre les deux file directory
@@ -96,7 +96,7 @@ void receive_data(char* hostname, int port, char* file){
 
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
-		
+
 			//on lit le packet encodée recu
      		 int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
@@ -119,7 +119,7 @@ void receive_data(char* hostname, int port, char* file){
 				{
 
 						int seq_rcv = pkt_get_seqnum(pkt_rcv);
-						
+
 						printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 						printf("%d",pkt_get_tr(pkt_rcv));
 						//Si tr == 1 => on envoie un NACK

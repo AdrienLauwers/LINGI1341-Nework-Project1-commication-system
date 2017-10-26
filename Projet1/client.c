@@ -26,9 +26,9 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 		*fail = 1;
 	}
 	 for(i=0; *small_seq != (seq+1)%256; i++){
-		
-		 
-		
+
+
+
 	    *small_ind =  (*small_ind) + 1; //seq est le prochain element attendu
 	   	*small_seq = (*small_seq+1)%256;
 		if(*small_seq == seq){//adapte le rtt et le temps maximal d'attente car le receiver a reçut seql
@@ -103,7 +103,7 @@ void send_data(char *hostname, int port, char* file){
 	int seq_ind = 0;
  	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
   	int seq_exp = 0; //prochain numero de sequence a envoyer
-	
+
   	//char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
 	//int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 	
@@ -117,17 +117,19 @@ void send_data(char *hostname, int port, char* file){
 	
 	pkt_t *buffer[MAX_WINDOW_SIZE];
 
+
 	fd_set read_set;
-	
+
 	int ack_received = 0;
 	int sent = 0;
 	int fail =0;
 	while(buffer_empty==1 || endFile == 0)
 	{
-		
+
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		printf("DEBUT NOUVELLE BOUCLE\n");
+
 		//printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 		
 		//int isNotFull = (small_seq < seq_exp ) ? seq_exp-small_seq<window : seq_exp+256-small_seq<window;
@@ -141,7 +143,7 @@ void send_data(char *hostname, int port, char* file){
 		if(endFile == 0 && (buffer_empty == 0 || isNotFull )) {
 			FD_SET(fd, &read_set);//prepare le premier flux (fichier) inutile si on est deja arrives a la fin ou si le buffer est rempli
        	}
-		
+
 		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
 		//On considère que la variable peut être modifiée après l'appel de la fonction,
@@ -177,15 +179,16 @@ void send_data(char *hostname, int port, char* file){
 	   		}
 			//Si taille > 1 => ok, en peut remplir de données le packet
 			else if(length > 0){
-				
-				if(buffer_empty == 0){			
+
+				if(buffer_empty == 0){
 					buffer_empty = 1;
 				}
-				
+
 				//On place, dans notre packet, les données lues dans le fichier
 				pkt_set_payload(pkt_send,(const char*)read_tmp,(size_t) length);
 
 				pkt_set_seqnum(pkt_send,seq_exp);
+				//printf("NUM SEG : %d\n,seq_exp");
 				
 				if(seq_ind == 1)
 				{
@@ -239,7 +242,7 @@ void send_data(char *hostname, int port, char* file){
 					printf("INDICE : %d\n",2);
 					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[2]));
 				}
-				
+
 				//On encode le packet pour l'envoyer après
 				if(pkt_encode(pkt_send,packet_encoded,(size_t *)&length_tmp)!= PKT_OK)
 				{
@@ -262,8 +265,10 @@ void send_data(char *hostname, int port, char* file){
 				{
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
+
 				//printf("INDICE : %d\nTAILLE : %d\n,",seq_ind%window,buffer_len[seq_ind%window]);
 				
+
 				seq_exp = (seq_exp + 1)%256;
 				seq_ind ++;
 				sent = 1;
@@ -296,26 +301,28 @@ void send_data(char *hostname, int port, char* file){
 				else{
 					printf("[[[ ERROR ON SEGNUM RECIEVED ]]]\n");
 				}
+
 				
 				int window1 = pkt_get_window(pkt_ack);		
+
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 
 				if(window1 > window){ //le buffer etait rempli
-					window = window1;			
+					window = window1;
 				}
-				
+
 
 				pkt_set_window(pkt_send, window); //changera pas si window invalide
 				ack_received = 1;
 				if(pkt_get_type(pkt_ack)==PTYPE_ACK){
 						//int w = 0;
 			 		 adapt_buffer(&small_seq, seq, &small_ind,window, pkt_get_timestamp(pkt_ack), tv, nbre_tv, &fail);
-					
+
 					if(endFile == 1 && small_ind == (seq_exp)) {
 						buffer_empty = 0;
 					}
-				
-					
+
+
 				}
 				else if(pkt_get_type(pkt_ack) == PTYPE_NACK) {
 					/*printf("ON RECOIt UN NACK\n");
@@ -330,11 +337,11 @@ void send_data(char *hostname, int port, char* file){
 					}*/
 
 				}
-			
-			
+
+
 			}
 		}
-		
+
 		if(sent !=1 && ack_received == 0)
 		{
 			
@@ -359,11 +366,11 @@ void send_data(char *hostname, int port, char* file){
       				return;
 			}
 		}
-		
-		
+
 		
 	//	printf("\n\nINDICE FIN: %d\nTAILLE : %d\n,",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 	
+
 	} //FIN DE LA BOUCLE
 	if(send(sfd,"", 0,0) < 0)
 	{

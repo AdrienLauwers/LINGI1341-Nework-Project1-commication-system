@@ -125,6 +125,72 @@ void encode(void) {
 
 }
 
+void encode_with_error_timestamp(void){
+	pkt_t * pkt1 = pkt_new();
+	pkt_t * pkt2 = pkt_new();
+	char * buf = "Test de 15 char";
+	char data[528];
+	pkt_status_code return_status = pkt_set_payload(pkt1, buf, 16);
+	size_t len = 528;
+	return_status = pkt_encode(pkt1, data,  &len);
+	CU_ASSERT_EQUAL(return_status, PKT_OK);
+	memset((void*)(data+4), 1345, 4);
+	return_status = pkt_decode(data, sizeof data, pkt2);
+	CU_ASSERT_EQUAL(return_status, E_CRC);
+	pkt_del(pkt1);
+	pkt_del(pkt2);
+}
+
+void encode_with_error_crc1(void){
+	pkt_t * pkt1 = pkt_new();
+	pkt_t * pkt2 = pkt_new();
+	char * buf = "Test de 15 char";
+	char data[528];
+	pkt_status_code return_status = pkt_set_payload(pkt1, buf, 16);
+	size_t len = 528;
+	return_status = pkt_encode(pkt1, data,  &len);
+	CU_ASSERT_EQUAL(return_status, PKT_OK);
+	memset((void*)(data+8), 1345, 4);
+	return_status = pkt_decode(data, sizeof data, pkt2);
+	CU_ASSERT_EQUAL(return_status, E_CRC);
+	pkt_del(pkt1);
+	pkt_del(pkt2);
+}
+
+
+void encode_with_error_crc2(void){
+	pkt_t * pkt1 = pkt_new();
+	pkt_t * pkt2 = pkt_new();
+	char * buf = "Test de 15 char";
+	char data[528];
+	pkt_status_code return_status = pkt_set_payload(pkt1, buf, 16);
+	size_t len = 528;
+	return_status = pkt_encode(pkt1, data,  &len);
+	CU_ASSERT_EQUAL(return_status, PKT_OK);
+	memset((void*)(data+12), 1345, 4);
+	return_status = pkt_decode(data, sizeof data, pkt2);
+	CU_ASSERT_EQUAL(return_status, E_CRC);
+	pkt_del(pkt1);
+	pkt_del(pkt2);
+}
+
+
+void encode_with_error_payload(void){
+	pkt_t * pkt1 = pkt_new();
+	pkt_t * pkt2 = pkt_new();
+	char * buf = "Test de 15 char";
+	char data[528];
+	pkt_status_code return_status = pkt_set_payload(pkt1, buf, 16);
+	size_t len = 528;
+	return_status = pkt_encode(pkt1, data,  &len);
+	CU_ASSERT_EQUAL(return_status, PKT_OK);
+	memset((void*)(data+pkt_get_length(pkt1)), 1345, 4);
+	return_status = pkt_decode(data, sizeof data, pkt2);
+	CU_ASSERT_EQUAL(return_status, E_CRC);
+	pkt_del(pkt1);
+	pkt_del(pkt2);
+}
+
 void send_receive(void){
 	int status;
 	pid_t pid = fork();
@@ -158,6 +224,7 @@ void send_receive(void){
   fclose(fd2);
 }
 
+
 int main(){
   CU_pSuite pSuite = NULL;
 	/* initialisation de la suite*/
@@ -180,7 +247,11 @@ int main(){
 			NULL == CU_add_test(pSuite, "pkt_get_set_timestamp", timestamp)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_payload", payload)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_encode", encode)||
-			NULL == CU_add_test(pSuite, "send_receive", send_receive)
+			NULL == CU_add_test(pSuite, "send_receive", send_receive)||
+			NULL == CU_add_test(pSuite, "encode_with_error_timestamp", encode_with_error_timestamp) ||
+			NULL == CU_add_test(pSuite, "encode_with_error_crc1", encode_with_error_crc1) ||
+			NULL == CU_add_test(pSuite, "encode_with_error_crc2", encode_with_error_crc2) ||
+			NULL == CU_add_test(pSuite, "encode_with_error_payload", encode_with_error_payload)
 			)
 	   {
 		CU_cleanup_registry();

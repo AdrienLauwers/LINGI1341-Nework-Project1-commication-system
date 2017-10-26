@@ -24,7 +24,7 @@ int test = 0;
 
 void pkt_copy(pkt_t* source,pkt_t* dest)
 {
- 	*source = *dest;
+ 	*dest = *source;
 }
 
 pkt_t* pkt_new()
