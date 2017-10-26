@@ -202,7 +202,7 @@ void send_data(char *hostname, int port, char* file){
 				pkt_copy(pkt_send,pkt_buff);
 				buffer[seq_ind%window] = pkt_buff;
 
-				 size_t tmp = 0;
+				 size_t tmp = 528;
 
 				//On encode le packet pour l'envoyer après
 				if(pkt_encode(pkt_send,packet_encoded,&tmp)!= PKT_OK)
@@ -280,7 +280,7 @@ void send_data(char *hostname, int port, char* file){
 			 		 adapt_buffer(&small_seq, seq, &small_ind,window, pkt_get_timestamp(pkt_ack), tv, nbre_tv, &fail);
 					if(fail == 1)
 					{
-						 size_t tmp = 0;
+						 size_t tmp = 528;
 						//On encode le packet pour l'envoyer après
 						if(pkt_encode(buffer[small_ind%window],packet_encoded,&tmp)!= PKT_OK)
 						{
@@ -334,7 +334,7 @@ void send_data(char *hostname, int port, char* file){
 		{
 
 
-			 size_t tmp = 0;
+			 size_t tmp = 528;
 			//printf("TAILLE : %d\n",buffer_len[small_ind%window]);
 			//On encode le packet pour l'envoyer après
 			//printf("PROB %d \n",pkt_encode(buffer[small_ind%window],packet_encoded,length_tmp));
