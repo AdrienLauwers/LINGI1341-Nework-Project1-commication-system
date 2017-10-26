@@ -22,6 +22,10 @@ int test = 0;
 /* Extra code */
 /* Your code will be inserted here */
 
+void pkt_copy(pkt_t* source,pkt_t* dest)
+{
+ 	*source = *dest;
+}
 
 pkt_t* pkt_new()
 {

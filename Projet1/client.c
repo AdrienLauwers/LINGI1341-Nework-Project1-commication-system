@@ -60,7 +60,7 @@ void send_data(char *hostname, int port, char* file){
 	memset(&real_addr, 0, sizeof(real_addr));
 	const char* ret_real = real_address(hostname, &real_addr);
 	if (ret_real != NULL){
-    	fprintf(stderr, "Address '%s' is not recognized.\n", hostname);
+    //	fprintf(stderr, "Address '%s' is not recognized.\n", hostname);
    		 return;
 	}
 	//Création du socket(qui est un file directory) à partir de l'adresse IPV6 récupérée avec la méthode real_adress
@@ -104,16 +104,19 @@ void send_data(char *hostname, int port, char* file){
  	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
   	int seq_exp = 0; //prochain numero de sequence a envoyer
 	
-  	char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+  	//char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
+	//int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 	
-	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
-	
-	memset(buffer_len,-1,MAX_WINDOW_SIZE);
+	//memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	int window = 1;
 	int nbre_tv = 0;
 	
-	char buffer_read[MAX_PAYLOAD_SIZE] ; //Buffer utilisé pour stocker le payload
-	char packet_encoded[1024]; //buffer utilisé pour lire les données encodées
+	char *packet_encoded = malloc (pkt_get_length(pkt_send) + 16);
+	char *read_tmp = malloc (MAX_PAYLOAD_SIZE);
+	int length_tmp;
+	
+	pkt_t *buffer[MAX_WINDOW_SIZE];
+
 	fd_set read_set;
 	
 	int ack_received = 0;
@@ -125,7 +128,7 @@ void send_data(char *hostname, int port, char* file){
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 		printf("DEBUT NOUVELLE BOUCLE\n");
-		printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
+		//printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 		
 		//int isNotFull = (small_seq < seq_exp ) ? seq_exp-small_seq<window : seq_exp+256-small_seq<window;
 		int isNotFull = seq_exp-small_seq<window;
@@ -154,11 +157,11 @@ void send_data(char *hostname, int port, char* file){
 
 			if(seq_ind%window !=0)
 			{
-				printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
+				//printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 			}
 			//On lit dans le fichier, et on stocke les données dans le buffer read
 			//La taille maximul correspond à la taille du payload
-			int length = read(fd,(void *)buffer_read, MAX_PAYLOAD_SIZE);
+			int length = read(fd,(void *)read_tmp, MAX_PAYLOAD_SIZE);
 
 			//SI TAILLE 0 => Fin de fichier
 			if(length == 0){
@@ -180,17 +183,65 @@ void send_data(char *hostname, int port, char* file){
 				}
 				
 				//On place, dans notre packet, les données lues dans le fichier
-				pkt_set_payload(pkt_send,(const char*)buffer_read,(size_t) length);
+				pkt_set_payload(pkt_send,(const char*)read_tmp,(size_t) length);
 
 				pkt_set_seqnum(pkt_send,seq_exp);
-			
 				
-				buffer_packet[seq_ind%window] = malloc (pkt_get_length(pkt_send));
-				buffer_len[seq_ind%window] = 1024;
-				
+				if(seq_ind == 1)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+				}
+				else if(seq_ind == 2)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+					printf("INDICE : %d\n",1);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[1]));
+				}
+				else if(seq_ind > 2)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+					printf("INDICE : %d\n",1);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[1]));
+					printf("INDICE : %d\n",2);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[2]));
+				}
+				printf("ON MET LE NUM %d à l'indice %d \n",pkt_get_seqnum(pkt_send),seq_ind%window);
+				pkt_t* pkt_buff  = pkt_new();
+				pkt_copy(pkt_send,pkt_buff);
+				buffer[seq_ind%window] = pkt_buff;
+				if(seq_ind == 0)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+				}
+				else if(seq_ind == 1)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+					printf("INDICE : %d\n",1);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[1]));
+				}
+				else if(seq_ind > 1)
+				{
+					printf("DANS LE TABLEAU\n");
+					printf("INDICE : %d\n",0);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[0]));
+					printf("INDICE : %d\n",1);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[1]));
+					printf("INDICE : %d\n",2);
+					printf("SEQNUM : %d\n",pkt_get_seqnum(buffer[2]));
+				}
 				
 				//On encode le packet pour l'envoyer après
-				if(pkt_encode(pkt_send,buffer_packet[seq_ind%window],(size_t *)&buffer_len[seq_ind%window])!= PKT_OK)
+				if(pkt_encode(pkt_send,packet_encoded,(size_t *)&length_tmp)!= PKT_OK)
 				{
 					//Si le message de retour est différent de PKT_OK => Il y a eu un probème
 					fprintf(stderr, "pkt_encode ici : An occur failed while creating a data packet.\n");
@@ -200,7 +251,7 @@ void send_data(char *hostname, int port, char* file){
 				}
 
 				//Envoiela packet au reciever
-				if(write(sfd,buffer_packet[seq_ind%window],buffer_len[seq_ind%window]) < 0)
+				if(write(sfd,packet_encoded,length_tmp) < 0)
 				{
 					fprintf(stderr, "write : An occur failed while sending a packet.\n");
 					pkt_del(pkt_send);
@@ -211,7 +262,7 @@ void send_data(char *hostname, int port, char* file){
 				{
 					printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(pkt_send));
 				}
-				printf("INDICE : %d\nTAILLE : %d\n,",seq_ind%window,buffer_len[seq_ind%window]);
+				//printf("INDICE : %d\nTAILLE : %d\n,",seq_ind%window,buffer_len[seq_ind%window]);
 				
 				seq_exp = (seq_exp + 1)%256;
 				seq_ind ++;
@@ -245,8 +296,8 @@ void send_data(char *hostname, int port, char* file){
 				else{
 					printf("[[[ ERROR ON SEGNUM RECIEVED ]]]\n");
 				}
-				int window1 = pkt_get_window(pkt_ack);
 				
+				int window1 = pkt_get_window(pkt_ack);		
 				uint8_t seq = pkt_get_seqnum(pkt_ack);
 
 				if(window1 > window){ //le buffer etait rempli
@@ -267,7 +318,7 @@ void send_data(char *hostname, int port, char* file){
 					
 				}
 				else if(pkt_get_type(pkt_ack) == PTYPE_NACK) {
-					printf("ON RECOIt UN NACK\n");
+					/*printf("ON RECOIt UN NACK\n");
 					int index = seq%window;
 					//printf("Ce qu'on veut renvoyer : %d",index);
 					if(write(sfd,buffer_packet[index],buffer_len[index]) < 0)
@@ -276,7 +327,7 @@ void send_data(char *hostname, int port, char* file){
 						pkt_del(pkt_send);
 						pkt_del(pkt_ack);
       					return;
-					}
+					}*/
 
 				}
 			
@@ -286,10 +337,21 @@ void send_data(char *hostname, int port, char* file){
 		
 		if(sent !=1 && ack_received == 0)
 		{
+			
 			printf("ON RENVOIE\n");
 			printf("INDICE : %d\n",small_ind%window);
-			printf("TAILLE : %d\n",buffer_len[small_ind%window]);
-			if(write(sfd, buffer_packet[small_ind%window], buffer_len[small_ind%window])  < 0)
+			//printf("TAILLE : %d\n",buffer_len[small_ind%window]);
+			//On encode le packet pour l'envoyer après
+			if(pkt_encode(buffer[small_ind%window],packet_encoded,(size_t *)&length_tmp)!= PKT_OK)
+			{
+				//Si le message de retour est différent de PKT_OK => Il y a eu un probème
+				fprintf(stderr, "pkt_encode ici : An occur failed while creating a data packet.\n");
+				pkt_del(pkt_send);
+				pkt_del(pkt_ack);
+				return;
+			}
+
+			if(write(sfd, packet_encoded,length_tmp)  < 0)
 			{
 					fprintf(stderr, "write : An occur failed while sending a packet.\n");
 					pkt_del(pkt_send);
@@ -298,18 +360,9 @@ void send_data(char *hostname, int port, char* file){
 			}
 		}
 		
-		if(seq_ind > 2)
-		{
-			printf("DANS LE TABLEAU\n");
-			printf("INDICE : %d\n",0);
-			printf("TAILLE : %d\n",buffer_len[0]);
-			printf("INDICE : %d\n",1);
-			printf("TAILLE : %d\n",buffer_len[1]);
-			printf("INDICE : %d\n",2);
-			printf("TAILLE : %d\n",buffer_len[2]);
-		}
 		
-		printf("\n\nINDICE FIN: %d\nTAILLE : %d\n,",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
+		
+	//	printf("\n\nINDICE FIN: %d\nTAILLE : %d\n,",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 	
 	} //FIN DE LA BOUCLE
 	if(send(sfd,"", 0,0) < 0)
