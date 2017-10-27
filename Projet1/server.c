@@ -162,11 +162,11 @@ void receive_data(char* hostname, int port, char* file){
 							int k;
 							if(seq_exp-1 == -1)
 							{
-								k = 255;
+								k = 0;
 							}
 							else
 							{
-								k = seq_exp-1;
+								k = (seq_exp-1)+1;
 							}
 							//CAS OU ON RECOIS SEULEMENT UN HEADER
 							if(send_ack(pkt_ack,seq_exp-1,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
@@ -226,7 +226,7 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
 
   pkt_status_code return_status;
   //Etablissement des valeurs du ack
-  return_status = pkt_set_seqnum(pkt_ack, seqnum);
+  return_status = pkt_set_seqnum(pkt_ack, seqnum+1);
   if(return_status != PKT_OK){
     perror("Creation de l'acknowledge : ");
     return -1;

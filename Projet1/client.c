@@ -21,7 +21,7 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 {
 	printf("%d",window);
 	int i;
-	int a = seq+1;
+	int a = seq+2;
 	printf("SMALL_SEQ : %d\n",*small_seq);
 	printf("Seq recu : %d\n",seq);
 	if(*small_seq == a)
@@ -29,7 +29,7 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 		printf("FAIIIIIIIIIIIIIL\n");
 		*fail = 1;
 	}
-	 for(i=0; *small_seq != (seq+1)%256; i++){
+	 for(i=0; *small_seq != (seq+2)%256; i++){
 
 
 
