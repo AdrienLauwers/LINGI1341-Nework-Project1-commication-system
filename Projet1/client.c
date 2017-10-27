@@ -313,17 +313,42 @@ void send_data(char *hostname, int port, char* file){
 
 				}
 				else if(pkt_get_type(pkt_ack) == PTYPE_NACK) {
-					/*printf("ON RECOIt UN NACK\n");
-					int index = seq%window;
-					printf("\nDFQSDGSDGQFG : %s \n", buffer_packet[index]);
+					if(seq < small_seq)
+					{
+						seq+=256;
+					}
+					int index = small_ind%window + seq + (seq - small_seq);
+					size_t tmp = 528;
+					//On encode le packet pour l'envoyer après
+					if(pkt_encode(buffer[index],packet_encoded,&tmp)!= PKT_OK)
+					{
+						//Si le message de retour est différent de PKT_OK => Il y a eu un probème
+						fprintf(stderr, "pkt_encode ici o : An occur failed while creating a data packet.\n");
+						pkt_del(pkt_send);
+						pkt_del(pkt_ack);
+						return;
+					}
+
+					//Envoiela packet au reciever
+					if(write(sfd,packet_encoded,tmp) < 0)
+					{
+						fprintf(stderr, "write : An occur failed while sending a packet.\n");
+						pkt_del(pkt_send);
+						pkt_del(pkt_ack);
+						return;
+					}
+					else
+					{
+						printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(buffer[small_ind%window]));
+					}
 					//printf("Ce qu'on veut renvoyer : %d",index);
-					if(write(sfd,buffer_packet[index],buffer_len[index]) < 0)
+					if(write(sfd,buffer[index],tmp) < 0)
 					{
 						fprintf(stderr, "write : An occur failed while sending a packet.\n");
 						pkt_del(pkt_send);
 						pkt_del(pkt_ack);
       					return;
-					}*/
+					}
 
 				}
 
