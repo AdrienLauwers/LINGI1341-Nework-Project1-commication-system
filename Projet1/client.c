@@ -337,7 +337,7 @@ void send_data(char *hostname, int port, char* file){
 			}
 		}
 
-		if(sent !=1 && ack_received == 0)
+		if(sent !=1 && ack_received == 0 && file != NULL)
 		{
 
 

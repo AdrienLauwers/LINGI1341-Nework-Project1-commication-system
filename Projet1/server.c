@@ -101,7 +101,6 @@ void receive_data(char* hostname, int port, char* file){
 			int length = read(sfd,(void *)packet_encoded, 1024);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
-				printf("[[[ EOF RECEIVED ]]]\n");
 				endFile = 1;
 				//Cas ou on recoit send(sfd, (const void *)EOF, 0,0);??
 				//On envoie le dernier packet recu ?
@@ -120,17 +119,13 @@ void receive_data(char* hostname, int port, char* file){
 				{
 					int seq_rcv = pkt_get_seqnum(pkt_rcv);
 
-					printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
 					//Si tr == 1 => on envoie un NACK
 					if(pkt_get_tr(pkt_rcv) == 1){
 						if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv),window) < 0)
 						{
 							fprintf(stderr,"Error sending nack");
 						}
-						else
-						{
-							printf("[[[ NACK NUM %d SENT ]]]\n",seq_rcv);
-						}
+
 					}
 					else{
 						//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu
@@ -166,10 +161,7 @@ void receive_data(char* hostname, int port, char* file){
 						{
 							fprintf(stderr,"Error sending ack");
 						}
-						else
-						{
-							printf("[[[ ACK NUM %d SENT ]]]\n",k);
-						}
+
 					}
 
 				}
@@ -235,7 +227,6 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
 		perror("Creation de l'acknowledge : ");
 		return -1;
 	}
-	printf("%u\n", time_data);
 	return_status = pkt_set_timestamp(pkt_ack, time_data);
 
 
