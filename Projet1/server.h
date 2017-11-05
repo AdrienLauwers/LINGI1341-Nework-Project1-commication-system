@@ -35,7 +35,7 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
 /*
  * Mets à jours le buffer
  * La fonction :
- * - 
+ * -
  *
  * @index:
  * @seq_rcv: Le seqnum recu
@@ -47,5 +47,5 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
  * @post: Renvoit 0 en cas de succès, sinon -1
  */
 
-void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int *buffer_len, pkt_t * pkt_rcv, int window);
+void add_buffer(int index, int seq_rcv, int seq_exp, pkt_t * pkt_rcv, int window);
 #endif

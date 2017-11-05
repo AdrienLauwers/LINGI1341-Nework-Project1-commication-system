@@ -17,6 +17,8 @@
 #include <math.h>
 #include <unistd.h>
 
+char *buffer_payload[MAX_PAYLOAD_SIZE]; //Permet de stocker les payload recu
+int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
 
 void receive_data(char* hostname, int port, char* file){
 
@@ -60,11 +62,10 @@ void receive_data(char* hostname, int port, char* file){
 	int window = 3;
 
 	int index = 0; //Utilisé pour gerer les indice du buffer
-	char *buffer_payload[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
-	int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
+
 	int seq_exp = 0; //Numéro de segment attendu
 	memset(buffer_len,-1,MAX_WINDOW_SIZE);
-	char packet_encoded[1024];
+	char packet_encoded[528];
 	fd_set read_set;
 
 	pkt_rcv = pkt_new();
@@ -134,7 +135,7 @@ void receive_data(char* hostname, int port, char* file){
 					else{
 						//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu
 						//un packet avec un numéro de segment supérieur au numéro de segment attendu
-						add_buffer(index, seq_rcv, seq_exp, buffer_payload, buffer_len, pkt_rcv, window);
+						add_buffer(index, seq_rcv, seq_exp, pkt_rcv, window);
 						//Ecriture de buffer et on le vide si le packet avec le bon numéro de segment attendu
 						//a bien été reçu
 						while (buffer_len[index] != -1){
@@ -191,7 +192,7 @@ void receive_data(char* hostname, int port, char* file){
 }
 
 
-void add_buffer(int index, int seq_rcv, int seq_exp,char ** buffer_payload, int *buffer_len, pkt_t * pkt_rcv, int window){
+void add_buffer(int index, int seq_rcv, int seq_exp, pkt_t * pkt_rcv, int window){
 	//On regarde si le num de segement recu est compris dans la window   && l  e numéro de segment recu est = ou > que le segment attendu (les numéros de segments inférieurs sont inutiles)
 	if ((seq_rcv <= seq_exp + window-1 && seq_rcv >= seq_exp)
 	//Exemple de cas à gérer :
@@ -225,8 +226,9 @@ int send_ack(pkt_t *pkt_ack, int seqnum, int sfd, int ack, uint32_t time_data, i
 	}
 
 	//On met le type à PTYPE_ACK ou PTYPE_NACK en fonction du paramètre passé en argument
-	if(ack == PTYPE_ACK)
+	if(ack == PTYPE_ACK){
 		return_status = pkt_set_type(pkt_ack, PTYPE_ACK);
+	}
 	else if(ack == PTYPE_NACK)
 		return_status = pkt_set_type(pkt_ack, PTYPE_NACK);
 	if(return_status != PKT_OK){

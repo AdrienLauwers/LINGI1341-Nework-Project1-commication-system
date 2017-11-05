@@ -36,7 +36,7 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 void adapt_rtt(struct timeval tv1, uint32_t timestamp, struct timeval *tv, int nbre_tv){
 	double rtt = (100000 * (tv->tv_usec) + tv->tv_sec)/2.0;
 
-	printf("rtt : %f ; %d ; %ld, %u\n",rtt,  tv->tv_usec, tv->tv_sec, timestamp);
+
 	int dif = 100000 * tv1.tv_usec+ tv1.tv_sec - timestamp;
 	if(nbre_tv == 10)
 		rtt = rtt - rtt / 10 + dif;
@@ -47,7 +47,7 @@ void adapt_rtt(struct timeval tv1, uint32_t timestamp, struct timeval *tv, int n
 	rtt = rtt * 2;
 	tv->tv_sec = rtt / 100000;
 	tv->tv_usec = (int) rtt % 100000;
-	printf("sec : %ld ; usec : %d, diff : %d\n", tv->tv_sec, tv->tv_usec, dif);
+
 
 
 }

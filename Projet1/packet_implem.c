@@ -88,7 +88,6 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 	//Décodage du timestamp
 	uint32_t pkt_timestamp = *((uint32_t *)(data + 4));
 	verif_status = pkt_set_timestamp(pkt, pkt_timestamp);
-    printf("\n timestamp decode  : %u\n", pkt_get_timestamp(pkt));
 	if(verif_status != PKT_OK)
 		return verif_status;
 
