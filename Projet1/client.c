@@ -20,7 +20,7 @@
 void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t timestamp, struct timeval tv, int  nbre_tv,int *fail)
 {
 	int i;
-	printf("%d\n", *fail);
+	//Permet de bouger la sliding window
 	for(i=0; *small_seq != seq%256; i++){
 		*small_ind =  (*small_ind+1)%window; //seq est le prochain element attendu
 		*small_seq = (*small_seq+1)%256;
@@ -34,9 +34,10 @@ void adapt_buffer(int *small_seq,int seq, int *small_ind,int window, uint32_t ti
 }
 
 void adapt_rtt(struct timeval tv1, uint32_t timestamp, struct timeval *tv, int nbre_tv){
+	//Calcul du rtt actuel
 	double rtt = (100000 * (tv->tv_usec) + tv->tv_sec)/2.0;
 
-
+	//Calcul de la différence
 	int dif = 100000 * tv1.tv_usec+ tv1.tv_sec - timestamp;
 	if(nbre_tv == 10)
 		rtt = rtt - rtt / 10 + dif;
@@ -90,20 +91,20 @@ void send_data(char *hostname, int port, char* file){
 	pkt_copy(pkt_send, pkt_ack);
 	int endFile = 0; //on regarde si fin du fichier ou non
 	int max_length = 0; //Taille maximal du file directory, utilisé pour l'appel du select
-	struct timeval tv;
+	struct timeval tv; //Valeur du retransmission timer utilisé par défault
 	tv.tv_sec = 0;
 	tv.tv_usec = 100000;
 	int small_seq = 0; // valeur du segment le plus petit dans le buffer
-	int small_ind = 0;
-	int seq_ind = 0;
+	int small_ind = 0; //Indice du plus petit paquet dans le buffer
+	int seq_ind = 0; //Indice du plus grand segment dans le buffer
 	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
 	int seq_exp = 0; //prochain numero de sequence a envoyer
 
-	int window = 1;
+	int window = 1; //Valeur initiale de la window
 	int nbre_tv = 0;
 
-	char packet_encoded[528];
-	char read_tmp[512];
+	char packet_encoded[528]; //Utilisé pour stocker le packet encodé
+	char read_tmp[512]; //utilisé pour lire le payload
 
 	pkt_t *buffer[MAX_WINDOW_SIZE];
 
@@ -120,15 +121,12 @@ void send_data(char *hostname, int port, char* file){
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
 
+		//Si le buffer est rempli, on ne doit pas lire de nouvelles données
 		int isNotFull = seq_exp-small_seq<window;
-
 		if(endFile == 0 && (buffer_empty == 0 || isNotFull )) {
 			FD_SET(fd, &read_set);//prepare le premier flux (fichier) inutile si on est deja arrives a la fin ou si le buffer est rempli
 		}
-		else
-		{
-			printf("BEUFFER REMPLI\n");
-		}
+
 
 		//calcul de la taille max entre les deux file directory
 		max_length = (fd > sfd) ? fd+1 : sfd+1;
@@ -344,7 +342,6 @@ void send_data(char *hostname, int port, char* file){
 			size_t tmp = 528;
 
 			//On encode le packet pour l'envoyer après
-
 			if(pkt_encode(buffer[small_ind%window],packet_encoded,&tmp)!= PKT_OK)
 			{
 				//Si le message de retour est différent de PKT_OK => Il y a eu un probème
@@ -369,6 +366,7 @@ void send_data(char *hostname, int port, char* file){
 		
 	} //FIN DE LA BOUCLE
 	
+	//On envoie un packet de taille 0 pour indiquer la fin du transfert de fichier
 	int endAck = 0;
 	pkt_set_length(pkt_send,0);
 	pkt_set_seqnum(pkt_send,seq_exp);
@@ -388,7 +386,7 @@ void send_data(char *hostname, int port, char* file){
 		struct timeval newtv = tv;
 		select(sfd+1, &read_set,NULL, NULL, &newtv);
 		printf("[[[SEG END SEND]]]\n");	
-		//Envoiela packet au reciever
+		//On envoie le message tant qu'on a pas eu l'ACK
 		if(write(sfd,packet_encoded,tmp) < 0)
 		{
 			fprintf(stderr, "write : An occur failed while sending a packet.\n");
@@ -396,7 +394,7 @@ void send_data(char *hostname, int port, char* file){
 			pkt_del(pkt_ack);
 			return;
 		}
-		
+		//Des qu'on a recu l'ack, on peut fermer le programme
 		if(FD_ISSET(sfd, &read_set)) {
 			int length = read(sfd, (void *)packet_encoded, 528);
 			//Decodage du  packet reçu dans pkt_ack

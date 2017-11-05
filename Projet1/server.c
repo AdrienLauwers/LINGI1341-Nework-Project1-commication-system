@@ -49,10 +49,11 @@ void receive_data(char* hostname, int port, char* file){
 	else
 		fd = STDOUT_FILENO;
 
+	//Valeur du retransmission timer utilisé par défault
 	struct timeval tv;
 	tv.tv_sec = 5;
 	tv.tv_usec = 0;
-	int endFile = 0;
+	int endFile = 0; //Permet de savoir si on est à la fin du fichier
 	int max_length = 0;
 	//Permet de lire les packet recu
 	pkt_t* pkt_rcv;
@@ -81,6 +82,7 @@ void receive_data(char* hostname, int port, char* file){
 		pkt_del(pkt_rcv);
 		return;
 	}
+	//On continue à recevoir des messages dans que le sender n'a pas envoyé son packet indiquant la fin du transfert
 	while(endFile == 0){
 
 
@@ -101,9 +103,6 @@ void receive_data(char* hostname, int port, char* file){
 			int length = read(sfd,(void *)packet_encoded, 528);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
-				endFile = 1;
-				//Cas ou on recoit send(sfd, (const void *)EOF, 0,0);??
-				//On envoie le dernier packet recu ?
 			}
 			//Si taille < 0 => problème
 			else if(length < 0){
@@ -128,6 +127,7 @@ void receive_data(char* hostname, int port, char* file){
 
 					}
 					else{
+						//Si on recooit un pack de taille 0 -> Indique la fin du transfert
 						int lg = pkt_get_length(pkt_rcv);
 						if(lg == 0)
 						{
@@ -173,11 +173,10 @@ void receive_data(char* hostname, int port, char* file){
 		}
 	}
 
+	//On ne sait pas si le sender va recevoir le ACK du packet de fin de transfert, donc on l'envoie 10 fois
 	int count = 0;
 	while(count < 11)
 	{
-		FD_ZERO(&read_set);
-		FD_SET(sfd, &read_set);
 		if(send_ack(pkt_ack,seq_exp-1,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
 		{
 			fprintf(stderr,"Error sending ack");
