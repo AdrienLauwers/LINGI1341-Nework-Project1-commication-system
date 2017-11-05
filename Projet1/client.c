@@ -91,27 +91,19 @@ void send_data(char *hostname, int port, char* file){
 	int endFile = 0; //on regarde si fin du fichier ou non
 	int max_length = 0; //Taille maximal du file directory, utilisé pour l'appel du select
 	struct timeval tv;
-	tv.tv_sec = 0; //On met 5 secondes d'intervalle
+	tv.tv_sec = 0;
 	tv.tv_usec = 100000;
-
-	//int actual_index = 0; //index actuel du buffer
-	//int small_index = 0; //index du plus petit element dans le buffer
 	int small_seq = 0; // valeur du segment le plus petit dans le buffer
 	int small_ind = 0;
 	int seq_ind = 0;
 	int buffer_empty = 0; //indique si le buffer est vide (0, 1 sinon)
 	int seq_exp = 0; //prochain numero de sequence a envoyer
 
-	//char *buffer_packet[MAX_WINDOW_SIZE]; //Permet de stocker les payload recu
-	//int buffer_len[MAX_WINDOW_SIZE]; //Permet de stocker la taille des payload recu
-
-	//memset(buffer_len,-1,MAX_WINDOW_SIZE);
 	int window = 1;
 	int nbre_tv = 0;
 
 	char packet_encoded[528];
 	char read_tmp[512];
-	//int length_tmp;
 
 	pkt_t *buffer[MAX_WINDOW_SIZE];
 
@@ -127,18 +119,9 @@ void send_data(char *hostname, int port, char* file){
 			break;
 		FD_ZERO(&read_set);
 		FD_SET(sfd, &read_set);
-		//usleep(200000);
 
-		//printf("INDICE AVANT: %d\nTAILLE : %d\n",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
-
-		//int isNotFull = (small_seq < seq_exp ) ? seq_exp-small_seq<window : seq_exp+256-small_seq<window;
 		int isNotFull = seq_exp-small_seq<window;
-		//int k = small_seq%window;
-		//int l =  seq_exp%window;
-		//printf("small_seq index : %d\n",k);
-		//printf("seq_exp index: %d\n",l);
-		//printf("actual_index : %d\n",actual_index);
-		//printf("small_index : %d\n",small_index);
+
 		if(endFile == 0 && (buffer_empty == 0 || isNotFull )) {
 			FD_SET(fd, &read_set);//prepare le premier flux (fichier) inutile si on est deja arrives a la fin ou si le buffer est rempli
 		}
@@ -191,7 +174,6 @@ void send_data(char *hostname, int port, char* file){
 				pkt_set_payload(pkt_send,(const char*)read_tmp,(size_t) length);
 
 				pkt_set_seqnum(pkt_send,seq_exp);
-				//printf("NUM SEG : %d\n,seq_exp");
 
 
 				pkt_t* pkt_buff  = pkt_new();
@@ -246,7 +228,6 @@ void send_data(char *hostname, int port, char* file){
 				int i = pkt_get_type(pkt_ack);
 				int seqRet = pkt_get_seqnum(pkt_ack);
 				printf("seqRet : %d\n", seqRet);
-				//printf("\n type : %d\n", (pkt_get_type(buffer[seqRet-1])));
 				if(i == 1)
 				{
 					fprintf(stdout,"[[[ SEGMENT NUM %d RECIEVED ]]]\n",seqRet);
@@ -254,7 +235,7 @@ void send_data(char *hostname, int port, char* file){
 				else if(i == 2)
 				{
 					fprintf(stdout,"[[[ ACK NUM %d RECIEVED ]]]\n",seqRet);
-					//printf("%s\n", pkt_get_payload(buffer[seqRet-1]));
+
 				}
 				else if(i == 3)
 				{
@@ -341,7 +322,7 @@ void send_data(char *hostname, int port, char* file){
 					{
 						printf("[[[ SEGMENT NUM %d SENT]]]\n",pkt_get_seqnum(buffer[small_ind%window]));
 					}
-					//printf("Ce qu'on veut renvoyer : %d",index);
+
 					if(write(sfd,buffer[index],tmp) < 0)
 					{
 						fprintf(stderr, "write : An occur failed while sending a packet.\n");
@@ -361,9 +342,9 @@ void send_data(char *hostname, int port, char* file){
 
 
 			size_t tmp = 528;
-			//printf("TAILLE : %d\n",buffer_len[small_ind%window]);
+
 			//On encode le packet pour l'envoyer après
-			//printf("PROB %d \n",pkt_encode(buffer[small_ind%window],packet_encoded,length_tmp));
+
 			if(pkt_encode(buffer[small_ind%window],packet_encoded,&tmp)!= PKT_OK)
 			{
 				//Si le message de retour est différent de PKT_OK => Il y a eu un probème
@@ -384,7 +365,6 @@ void send_data(char *hostname, int port, char* file){
 		}
 
 
-		//	printf("\n\nINDICE FIN: %d\nTAILLE : %d\n,",(seq_ind-1)%window,buffer_len[(seq_ind-1)%window]);
 
 	} //FIN DE LA BOUCLE
 	if(send(sfd,"", 0,0) < 0)

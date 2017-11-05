@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <CUnit/Basic.h>
 #include "packet_interface.h"
@@ -58,9 +59,7 @@ void seqnum(void) {
 //6
 void length(void) {
 	pkt_t * pkt = pkt_new();
-
 	int random = rand()%513;
-
 	pkt_status_code return_status = pkt_set_length(pkt, random);
 	CU_ASSERT_EQUAL(return_status, PKT_OK);
 	return_status = pkt_set_tr(pkt, 0);
@@ -119,6 +118,7 @@ void encode(void) {
 	CU_ASSERT_EQUAL(pkt_get_type(pkt1), pkt_get_type(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_window(pkt1), pkt_get_window(pkt2));
 	CU_ASSERT_EQUAL(pkt_get_timestamp(pkt1), pkt_get_timestamp(pkt2));
+	printf("\n time1 : %d, time2 : %d\n", pkt_get_timestamp(pkt1), pkt_get_timestamp(pkt2));
 
 	pkt_del(pkt1);
 	pkt_del(pkt2);
@@ -199,12 +199,12 @@ void send_receive(void){
 
 	if(pid == 0){
 		fflush(stdout);
-		receive_data("::1", 12348, "result.txt");
+		receive_data("::1", 11111, "result.txt");
 		exit(0);
 	}
 	else{
 		fflush(stdout);
-		send_data("::1", 12348, "test.txt");
+		send_data("::1", 11111, "test.txt");
 		int fils = waitpid(pid, &status, 0);
 		if(fils == -1)
 			exit(EXIT_FAILURE);
@@ -220,9 +220,9 @@ void send_receive(void){
          ch1 = getc(fd1);
          ch2 = getc(fd2);
       }
-  CU_ASSERT(ch1 == ch2);
+  	CU_ASSERT(ch1 == ch2);
 	fclose(fd1);
-  fclose(fd2);
+	fclose(fd2);
 }
 
 void send_receive_long(void){
@@ -233,12 +233,12 @@ void send_receive_long(void){
 
 	if(pid == 0){
 		fflush(stdout);
-		receive_data("::1", 12348, "result.txt");
+		receive_data("::1", 11112, "result.txt");
 		exit(0);
 	}
 	else{
 		fflush(stdout);
-		send_data("::1", 12348, "long_text.txt");
+		send_data("::1", 11112, "long_text.txt");
 		int fils = waitpid(pid, &status, 0);
 		if(fils == -1)
 			exit(EXIT_FAILURE);
@@ -254,9 +254,9 @@ void send_receive_long(void){
          ch1 = getc(fd1);
          ch2 = getc(fd2);
       }
-  CU_ASSERT(ch1 == ch2);
+  	CU_ASSERT(ch1 == ch2);
 	fclose(fd1);
-  fclose(fd2);
+  	fclose(fd2);
 }
 
 

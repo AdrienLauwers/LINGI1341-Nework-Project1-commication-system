@@ -64,7 +64,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 
 	/*****************************************
-							ON CHECK LE HEADER
+				ON CHECK LE HEADER
 	******************************************/
 
 	pkt_status_code verif_status;
@@ -86,7 +86,8 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 
 	//Décodage du timestamp
-	verif_status = pkt_set_timestamp(pkt, *(data + 4));
+	uint32_t pkt_timestamp = *((uint32_t *)(data + 4));
+	verif_status = pkt_set_timestamp(pkt, pkt_timestamp);
     printf("\n timestamp decode  : %u\n", pkt_get_timestamp(pkt));
 	if(verif_status != PKT_OK)
 		return verif_status;
@@ -144,7 +145,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     size_t length_tot = pkt_get_length(pkt);
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	pkt_set_timestamp((pkt_t*) pkt , tv.tv_sec * 100000 + tv.tv_usec);
+	pkt_set_timestamp((pkt_t*) pkt , tv.tv_sec * 1000000 + tv.tv_usec);
 
 
 	if(pkt_get_tr(pkt)==0 && length > 0)

@@ -80,7 +80,6 @@ void receive_data(char* hostname, int port, char* file){
 		pkt_del(pkt_rcv);
 		return;
 	}
-	//int q = 0;
 	while(endFile == 0){
 
 
@@ -121,11 +120,8 @@ void receive_data(char* hostname, int port, char* file){
 					int seq_rcv = pkt_get_seqnum(pkt_rcv);
 
 					printf("[[[ SEGMENT NUM %d RECEIVED ]]]\n",seq_rcv);
-					printf("%d",pkt_get_tr(pkt_rcv));
 					//Si tr == 1 => on envoie un NACK
-					//q++;
 					if(pkt_get_tr(pkt_rcv) == 1){
-						printf("TRUCATEEEED\n");
 						if(send_ack(pkt_ack,seq_rcv,sfd, PTYPE_NACK, pkt_get_timestamp(pkt_rcv),window) < 0)
 						{
 							fprintf(stderr,"Error sending nack");
