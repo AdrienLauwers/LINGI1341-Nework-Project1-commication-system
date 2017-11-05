@@ -1,6 +1,7 @@
 #include "packet_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <string.h>
 #include <zlib.h>
 #include <arpa/inet.h>
@@ -31,7 +32,7 @@ void pkt_copy(pkt_t* source,pkt_t* dest)
 pkt_t* pkt_new()
 {
 	pkt_t *new_pkt;
-	new_pkt = (pkt_t*) calloc(sizeof(pkt_t), 1);
+	new_pkt = (pkt_t*) malloc(sizeof(pkt_t));
 	if(new_pkt == NULL){
 		perror("Erreur lors du malloc du package");
 		return NULL;
@@ -86,6 +87,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
 	//Décodage du timestamp
 	verif_status = pkt_set_timestamp(pkt, *(data + 4));
+    printf("\n timestamp decode  : %u\n", pkt_get_timestamp(pkt));
 	if(verif_status != PKT_OK)
 		return verif_status;
 
@@ -140,12 +142,16 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
   pkt_status_code return_status;
 	size_t length = pkt_get_length(pkt);
     size_t length_tot = pkt_get_length(pkt);
-	
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	pkt_set_timestamp((pkt_t*) pkt , tv.tv_sec * 100000 + tv.tv_usec);
+
+
 	if(pkt_get_tr(pkt)==0 && length > 0)
 		length_tot += 4;
 	/*if(*len < length_tot + 12) //1byte( pour type + tr + window )+ 1byte(pour seqnum) + 4bytes (pour timestamp) + 2bytes(pour length) + 4bytes (pour crc1)
 		return E_NOMEM;*/
-	
+
 	memcpy(buf, (void*)pkt, 8);
 	size_t i;
 
@@ -304,5 +310,3 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 	}
 	return return_status;
 }
-
-

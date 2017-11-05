@@ -199,17 +199,52 @@ void send_receive(void){
 
 	if(pid == 0){
 		fflush(stdout);
-		receive_data("::1", 12346, "result.txt");
+		receive_data("::1", 12348, "result.txt");
+		exit(0);
 	}
 	else{
 		fflush(stdout);
-		send_data("::1", 12346, "test.txt");
+		send_data("::1", 12348, "test.txt");
 		int fils = waitpid(pid, &status, 0);
 		if(fils == -1)
 			exit(EXIT_FAILURE);
 	}
 	fflush(stdout);
 	FILE* fd1 = fopen("test.txt", "r");
+	if(fd1 == NULL) fclose(fd1);
+	FILE* fd2 = fopen("result.txt", "r");
+	if(fd2 == NULL) fclose(fd2);
+	int ch1 = getc(fd1);
+	int ch2 = getc(fd2);
+	while ((ch1 != EOF) && (ch2 != EOF) && (ch1 == ch2)) {
+         ch1 = getc(fd1);
+         ch2 = getc(fd2);
+      }
+  CU_ASSERT(ch1 == ch2);
+	fclose(fd1);
+  fclose(fd2);
+}
+
+void send_receive_long(void){
+	int status;
+	pid_t pid = fork();
+	if(pid < 0)
+		exit(EXIT_FAILURE);
+
+	if(pid == 0){
+		fflush(stdout);
+		receive_data("::1", 12348, "result.txt");
+		exit(0);
+	}
+	else{
+		fflush(stdout);
+		send_data("::1", 12348, "long_text.txt");
+		int fils = waitpid(pid, &status, 0);
+		if(fils == -1)
+			exit(EXIT_FAILURE);
+	}
+	fflush(stdout);
+	FILE* fd1 = fopen("long_text.txt", "r");
 	if(fd1 == NULL) fclose(fd1);
 	FILE* fd2 = fopen("result.txt", "r");
 	if(fd2 == NULL) fclose(fd2);
@@ -248,6 +283,7 @@ int main(){
 			NULL == CU_add_test(pSuite, "pkt_get_set_payload", payload)||
 			NULL == CU_add_test(pSuite, "pkt_get_set_encode", encode)||
 			NULL == CU_add_test(pSuite, "send_receive", send_receive)||
+			NULL == CU_add_test(pSuite, "send_receive_long", send_receive_long)||
 			NULL == CU_add_test(pSuite, "encode_with_error_timestamp", encode_with_error_timestamp) ||
 			NULL == CU_add_test(pSuite, "encode_with_error_crc1", encode_with_error_crc1) ||
 			NULL == CU_add_test(pSuite, "encode_with_error_crc2", encode_with_error_crc2) ||
