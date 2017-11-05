@@ -98,7 +98,7 @@ void receive_data(char* hostname, int port, char* file){
 		//Cas ou on a reçu un packet
 		if(FD_ISSET(sfd, &read_set )) {
 			//on lit le packet encodée recu
-			int length = read(sfd,(void *)packet_encoded, 1024);
+			int length = read(sfd,(void *)packet_encoded, 528);
 			//Si taille == 0 , réception du packet qui confirme la fin de transmission
 			if(length == 0){
 				endFile = 1;
@@ -128,6 +128,15 @@ void receive_data(char* hostname, int port, char* file){
 
 					}
 					else{
+						int lg = pkt_get_length(pkt_rcv);
+						if(lg == 0)
+						{
+							printf("[[[ EOF RECEIVED ]]]\n");
+							endFile = 1;
+						}
+						else
+						{
+							
 						//Ajout du packet recu dans un buffer (pour gerer les cas ou on a recu
 						//un packet avec un numéro de segment supérieur au numéro de segment attendu
 						add_buffer(index, seq_rcv, seq_exp, pkt_rcv, window);
@@ -147,36 +156,36 @@ void receive_data(char* hostname, int port, char* file){
 							//Le numéro de séquence attendu est incrémenté
 							seq_exp = (seq_exp+1)%256;
 						}
-						int k;
-						if(seq_exp-1 == -1)
-						{
-							k = 0;
-						}
-						else
-						{
-							k = (seq_exp-1)+1;
-						}
-						//CAS OU ON RECOIS SEULEMENT UN HEADER
 						if(send_ack(pkt_ack,seq_exp-1,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
 						{
 							fprintf(stderr,"Error sending ack");
 						}
 
 					}
-
+						
+					}
 				}
 				else
 				{
 					printf("NACKNACK\n");
 				}
-
-
-
 			}
 		}
 	}
 
-
+	int count = 0;
+	while(count < 11)
+	{
+		FD_ZERO(&read_set);
+		FD_SET(sfd, &read_set);
+		if(send_ack(pkt_ack,seq_exp-1,sfd, PTYPE_ACK, pkt_get_timestamp(pkt_rcv), window) < 0)
+		{
+			fprintf(stderr,"Error sending ack");
+		}
+		count++;
+		printf("[[[ACK END SENT]]]\n");
+	}
+	
 	close(sfd);
 	close(fd);
 	pkt_del(pkt_ack);

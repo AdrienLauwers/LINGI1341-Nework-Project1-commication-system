@@ -218,7 +218,7 @@ void send_data(char *hostname, int port, char* file){
 		//Cas ou on a reçu un ACK/NACK
 		if( FD_ISSET(sfd, &read_set)){
 			//Lecture du packet encodé recu et le place dans la variable packet_encoded
-			int length = read(sfd, (void *)packet_encoded, 1024);
+			int length = read(sfd, (void *)packet_encoded, 528);
 			//Decodage du  packet reçu dans pkt_ack
 			if(length> 0 && pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) != PKT_OK){
 				fprintf(stdout,"[[[ ERROR RECIEVING ACK NUM %d ]]]\n",pkt_get_seqnum(pkt_ack));
@@ -366,14 +366,49 @@ void send_data(char *hostname, int port, char* file){
 
 
 
+		
 	} //FIN DE LA BOUCLE
-	if(send(sfd,"", 0,0) < 0)
+	
+	int endAck = 0;
+	pkt_set_length(pkt_send,0);
+	pkt_set_seqnum(pkt_send,seq_exp);
+	size_t tmp = 528;
+	if(pkt_encode(pkt_send,packet_encoded,&tmp)!= PKT_OK)
 	{
-		fprintf(stderr, "send EOF : An occur failed while sending EOF.\n");
+		//Si le message de retour est différent de PKT_OK => Il y a eu un probème
+		fprintf(stderr, "pkt_encode ici o : An occur failed while creating a data packet.\n");
 		pkt_del(pkt_send);
 		pkt_del(pkt_ack);
 		return;
 	}
+	while(endAck == 0)
+	{
+		FD_ZERO(&read_set);
+		FD_SET(sfd, &read_set);
+		struct timeval newtv = tv;
+		select(sfd+1, &read_set,NULL, NULL, &newtv);
+		printf("[[[SEG END SEND]]]\n");	
+		//Envoiela packet au reciever
+		if(write(sfd,packet_encoded,tmp) < 0)
+		{
+			fprintf(stderr, "write : An occur failed while sending a packet.\n");
+			pkt_del(pkt_send);
+			pkt_del(pkt_ack);
+			return;
+		}
+		
+		if(FD_ISSET(sfd, &read_set)) {
+			int length = read(sfd, (void *)packet_encoded, 528);
+			//Decodage du  packet reçu dans pkt_ack
+			if(pkt_decode((const char *)packet_encoded,(size_t )length,pkt_ack) == PKT_OK){
+				printf("[[[ACK END RECEIVED]]]");	
+				
+					endAck = 1;
+				
+			}
+		}
+	}
+	
 	close(sfd);
 	close(fd);
 	pkt_del(pkt_ack);
